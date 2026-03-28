@@ -1,6 +1,8 @@
 # 🚀 PeerCart  
 ### *Buy • Sell • Rent*
 
+<img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/e5fbd45d-e633-4705-aa61-066fbd64c495" />
+
 ---
 
 ## 🧠 Overview
