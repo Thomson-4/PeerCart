@@ -1,6 +1,6 @@
 # 🚀 PeerCart  
 
-![b3e8f8c9-1fb9-464f-8d31-4a9840ae0bcd](https://github.com/user-attachments/assets/9f1b57a5-fe01-4659-bc49-39aefbb04338)
+<img width="100" height="100" alt="image" src="https://github.com/user-attachments/assets/4f89e660-0b56-44f5-b38e-a98a6114a98d" />
 
 ### *Buy • Sell • Rent*
 
