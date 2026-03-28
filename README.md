@@ -1,4 +1,5 @@
-# <img width="500" height="500" alt="Gemini_Generated_Image_5tzb215tzb215tzb-removebg-preview" src="https://github.com/user-attachments/assets/24e85175-8d3f-491d-8029-03a4d9bdc251" />
+# <img width="200" height="200" alt="Gemini_Generated_Image_5tzb215tzb215tzb" src="https://github.com/user-attachments/assets/68a84247-62f8-4fda-8de5-aca884540f3a" />
+
 PeerCart
 
 PeerCart is a smart peer-to-peer marketplace that enables users to buy, sell, and rent items safely and efficiently.
