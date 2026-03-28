@@ -18,7 +18,7 @@ PeerCart provides a verified, AI-powered platform for seamless transactions.
 ## 📁 Project Structure
 - documents/
 - weekly_reports/
-- src/
+- frontend/
 
 ## 👥 Team Members
 - Shivarayagouda Biradar - R23EF247
