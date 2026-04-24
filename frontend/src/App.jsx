@@ -9,6 +9,7 @@ import NeedBoard from './pages/NeedBoard';
 import AddItem from './pages/AddItem';
 import Profile from './pages/Profile';
 import ConfirmEmail from './pages/ConfirmEmail';
+import MobileUpload from './pages/MobileUpload';
 import useTheme from './hooks/useTheme';
 
 function ProtectedRoute({ children }) {
@@ -24,6 +25,7 @@ function AppRoutes() {
       <Route path="/login"                element={<Login />} />
       <Route path="/signup"               element={<Signup />} />
       <Route path="/confirm-email/:token" element={<ConfirmEmail />} />
+      <Route path="/upload/:token"        element={<MobileUpload />} />
 
       {/* All pages that share Header + Footer */}
       <Route element={<MainLayout theme={theme} toggleTheme={toggleTheme} />}>

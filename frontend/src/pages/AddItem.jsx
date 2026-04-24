@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   UploadCloud, Send, Loader, Lock, ShieldCheck,
-  Camera, X, CheckCircle2, Smartphone, ImageIcon,
+  Camera, X, CheckCircle2, Smartphone, ImageIcon, QrCode,
 } from 'lucide-react';
-import { listings as listingsApi } from '../services/api';
+import { listings as listingsApi, upload as uploadApi } from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,6 +44,48 @@ export default function AddItem() {
   const [submitting,        setSubmitting]        = useState(false);
   const [error,             setError]             = useState('');
   const [success,           setSuccess]           = useState(false);
+
+  // QR upload state (desktop only)
+  const [qrToken,  setQrToken]  = useState(null);
+  const [qrUrl,    setQrUrl]    = useState(null);
+  const [qrDone,   setQrDone]   = useState(false);
+  const pollRef = useRef(null);
+
+  // Poll backend every 2s while QR modal is open
+  useEffect(() => {
+    if (!qrToken || qrDone) return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const data = await uploadApi.pollSession(qrToken);
+        if (data.completed && data.url) {
+          clearInterval(pollRef.current);
+          setQrDone(true);
+          setImagePreview(data.url);
+          setLiveCaptureVerified(true);
+        }
+      } catch (_) {}
+    }, 2000);
+    return () => clearInterval(pollRef.current);
+  }, [qrToken, qrDone]);
+
+  const openQrModal = async () => {
+    try {
+      const { token } = await uploadApi.createSession();
+      const mobileUrl = `${window.location.origin}/upload/${token}`;
+      setQrToken(token);
+      setQrUrl(mobileUrl);
+      setQrDone(false);
+    } catch (err) {
+      setError('Could not create upload session. Try again.');
+    }
+  };
+
+  const closeQrModal = () => {
+    clearInterval(pollRef.current);
+    setQrToken(null);
+    setQrUrl(null);
+    setQrDone(false);
+  };
 
   // Trust Level 0 gate
   if (trustLevel < 1) {
@@ -157,21 +199,34 @@ export default function AddItem() {
             </div>
           ) : (
             /* Upload zone */
-            <div
-              onClick={() => fileRef.current?.click()}
-              className="aspect-square w-full rounded-2xl border-2 border-dashed border-border-color bg-surface-elevated/80 flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-accent hover:bg-accent/5 transition-colors group"
-            >
-              <div className="bg-surface rounded-full p-4 mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                <UploadCloud size={32} className="text-text-secondary group-hover:text-accent" />
+            <div className="space-y-3">
+              <div
+                onClick={() => fileRef.current?.click()}
+                className="aspect-square w-full rounded-2xl border-2 border-dashed border-border-color bg-surface-elevated/80 flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-accent hover:bg-accent/5 transition-colors group"
+              >
+                <div className="bg-surface rounded-full p-4 mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                  <UploadCloud size={32} className="text-text-secondary group-hover:text-accent" />
+                </div>
+                <h3 className="font-bold text-lg mb-1">
+                  {isMobile ? 'Take a Photo' : 'Upload a Photo'}
+                </h3>
+                <p className="text-sm text-text-secondary">
+                  {isMobile
+                    ? 'Tap to open your rear camera'
+                    : 'Click to select an image from your computer'}
+                </p>
               </div>
-              <h3 className="font-bold text-lg mb-1">
-                {isMobile ? 'Take a Photo' : 'Upload a Photo'}
-              </h3>
-              <p className="text-sm text-text-secondary">
-                {isMobile
-                  ? 'Tap to open your rear camera'
-                  : 'Click to select an image from your computer'}
-              </p>
+
+              {/* Desktop: scan with phone */}
+              {!isMobile && (
+                <button
+                  type="button"
+                  onClick={openQrModal}
+                  className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold border border-border-color rounded-xl hover:border-accent/60 hover:text-accent transition-colors text-text-secondary"
+                >
+                  <QrCode size={16} /> Scan QR to upload from phone instead
+                </button>
+              )}
             </div>
           )}
 
@@ -357,6 +412,66 @@ export default function AddItem() {
           </button>
         </form>
       </div>
+
+      {/* QR Upload Modal */}
+      {qrToken && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bento-panel p-8 max-w-sm w-full text-center relative">
+            <button
+              type="button"
+              onClick={closeQrModal}
+              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary"
+            >
+              <X size={20} />
+            </button>
+
+            {qrDone ? (
+              <div className="flex flex-col items-center gap-4">
+                <CheckCircle2 size={48} className="text-emerald-400" />
+                <h3 className="text-xl font-black">Photo received!</h3>
+                <p className="text-text-secondary text-sm">Your photo has been added. Close this to continue.</p>
+                <button
+                  type="button"
+                  onClick={closeQrModal}
+                  className="px-6 py-3 bg-accent text-white font-bold rounded-xl"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <>
+                <Smartphone size={28} className="text-accent mx-auto mb-3" />
+                <h3 className="text-xl font-black mb-1">Scan with your phone</h3>
+                <p className="text-text-secondary text-sm mb-5">
+                  Open your phone camera and scan this code to take a live photo and upload it directly.
+                </p>
+
+                {/* QR Code via free API — no npm package needed */}
+                <div className="flex justify-center mb-5">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=0a0a0a&color=ffffff&margin=2`}
+                    alt="QR code"
+                    className="rounded-xl"
+                    width={200}
+                    height={200}
+                  />
+                </div>
+
+                <p className="text-xs text-text-secondary mb-2">
+                  Or open this link on your phone:
+                </p>
+                <p className="text-xs text-accent font-mono break-all">{qrUrl}</p>
+
+                <div className="flex items-center justify-center gap-2 mt-5 text-text-secondary text-sm">
+                  <Loader size={14} className="animate-spin" />
+                  Waiting for photo…
+                </div>
+                <p className="text-xs text-text-secondary mt-2">Session expires in 5 minutes</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

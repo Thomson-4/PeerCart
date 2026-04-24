@@ -71,3 +71,24 @@ export const chat = {
   sendMessage:    (convId, content)          => req(`/api/chat/conversations/${convId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
   unreadCount:    ()                         => req('/api/chat/unread-count'),
 };
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+export const upload = {
+  createSession: ()        => req('/api/upload/session', { method: 'POST' }),
+  pollSession:   (token)   => req(`/api/upload/session/${token}`),
+  uploadImage: (file) => {
+    const token = localStorage.getItem('pc_token');
+    const fd = new FormData();
+    fd.append('image', file);
+    return fetch(`${BASE_URL}/api/upload/image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
+    }).then(async (r) => {
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.message || 'Upload failed');
+      return d;
+    });
+  },
+};
