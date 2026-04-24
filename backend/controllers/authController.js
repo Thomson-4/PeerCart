@@ -262,8 +262,7 @@ const sendEmailOtp = async (req, res, next) => {
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
 
-    // Explicit find-then-save avoids upsert setting phone:null on new docs
-    // which conflicts with the sparse unique index in some Mongoose versions
+    // Use find-then-save (never upsert) to avoid writing phone:null into new docs.
     if (existingUser) {
       existingUser.otp       = otp;
       existingUser.otpExpiry = otpExpiry;
