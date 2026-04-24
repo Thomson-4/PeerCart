@@ -44,6 +44,7 @@ export const auth = {
 
 export const listings = {
   getAll:  (params = {}) => req(`/api/listings${qs(params)}`),
+  getMine: ()            => req('/api/listings?mine=true'),
   getOne:  (id)          => req(`/api/listings/${id}`),
   create:  (body)        => req('/api/listings',     { method: 'POST',   body: JSON.stringify(body) }),
   update:  (id, body)    => req(`/api/listings/${id}`, { method: 'PUT',  body: JSON.stringify(body) }),

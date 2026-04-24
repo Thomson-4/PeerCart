@@ -60,9 +60,12 @@ const getListings = async (req, res, next) => {
   try {
     if (!requireCampus(req.user, res)) return;
 
-    const { category, type, minPrice, maxPrice, condition, page = 1, limit = DEFAULT_LIMIT } = req.query;
+    const { category, type, minPrice, maxPrice, condition, mine, page = 1, limit = DEFAULT_LIMIT } = req.query;
 
-    const filter = { campus: req.user.campus, status: 'active' };
+    const filter = mine === 'true'
+      ? { seller: req.user._id }
+      : { campus: req.user.campus, status: 'active' };
+
     if (category)  filter.category  = category;
     if (type)      filter.type      = type;
     if (condition) filter.condition = condition;

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   CheckCircle2, Star, ShieldCheck,
-  Loader, LogOut, ChevronRight, Lock,
+  Loader, LogOut, ChevronRight, Lock, Package,
 } from 'lucide-react';
-import { auth as authApi } from '../services/api';
+import { auth as authApi, listings as listingsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 /* ─── Trust level meta ──────────────────────────────────────────── */
 const LEVELS = [
@@ -240,6 +240,79 @@ function TrustJourney({ user }) {
   );
 }
 
+const STATUS_STYLES = {
+  active:  'bg-green-400/10 text-green-400 border-green-400/30',
+  sold:    'bg-text-secondary/10 text-text-secondary border-border-color',
+  rented:  'bg-accent/10 text-accent border-accent/30',
+  expired: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/30',
+};
+
+function MyListings() {
+  const [items,   setItems]   = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listingsApi.getMine()
+      .then((d) => setItems(d.listings || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="bento-panel p-6 flex items-center gap-3 text-text-secondary">
+      <Loader size={18} className="animate-spin" /> Loading your listings…
+    </div>
+  );
+
+  return (
+    <div className="bento-panel p-6 md:p-7">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
+          <Package size={20} className="text-accent" /> My Listings
+        </h2>
+        <Link to="/add" className="text-sm font-bold text-accent hover:underline">+ New listing</Link>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="text-center py-10 text-text-secondary">
+          <Package size={36} className="mx-auto mb-3 opacity-30" />
+          <p className="font-semibold">You haven't posted anything yet.</p>
+          <Link to="/add" className="mt-3 inline-block text-sm text-accent hover:underline">Post your first listing →</Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div key={item._id} className="flex items-center gap-4 p-3 rounded-xl border border-border-color bg-surface/40 hover:border-accent/30 transition-colors">
+              {item.images?.[0] ? (
+                <img src={item.images[0]} alt={item.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-surface-elevated" />
+              ) : (
+                <div className="w-14 h-14 rounded-xl bg-surface-elevated flex-shrink-0 flex items-center justify-center text-2xl">
+                  📦
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm text-text-primary truncate">{item.title}</p>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  ₹{((item.price || 0) / 100).toLocaleString('en-IN')}
+                  {item.type === 'rent' ? '/day' : ''} · {item.category}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border capitalize ${STATUS_STYLES[item.status] || STATUS_STYLES.active}`}>
+                  {item.status}
+                </span>
+                <span className={`text-[10px] font-semibold uppercase ${item.type === 'rent' ? 'text-accent' : 'text-text-secondary'}`}>
+                  {item.type}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main Page ─────────────────────────────────────────────────── */
 export default function Profile() {
   const { user: ctxUser, logout, refreshUser } = useAuth();
@@ -249,7 +322,6 @@ export default function Profile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Always fetch fresh user data on profile load
     authApi.me()
       .then((data) => { setUser(data.user); refreshUser(); })
       .catch((err) => setError(err.message))
@@ -271,8 +343,9 @@ export default function Profile() {
     return <div className="bento-panel p-6 text-center text-red-400">{error}</div>;
   }
 
-  const trustScore = Math.round((user?.averageRating || 0) * 20);
-  const avatarUrl  = user?.avatar || `https://i.pravatar.cc/300?u=${user?.id}`;
+  const trustScore   = Math.round((user?.averageRating || 0) * 20);
+  const avatarUrl    = user?.avatar || null;
+  const initials     = (user?.name || user?.phone || '?').slice(0, 2).toUpperCase();
   const currentLevel = LEVELS[user?.trustLevel ?? 0];
 
   return (
@@ -282,7 +355,13 @@ export default function Profile() {
       <div className="flex flex-col md:flex-row items-center md:items-start gap-8 py-8 border-b border-border-color">
         <div className="relative">
           <div className="w-28 h-28 rounded-full border-4 border-surface p-1 shadow-lg bg-gradient-to-tr from-accent to-lime-green">
-            <img src={avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover rounded-full bg-surface" />
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover rounded-full bg-surface" />
+            ) : (
+              <div className="w-full h-full rounded-full bg-surface flex items-center justify-center text-2xl font-black text-accent select-none">
+                {initials}
+              </div>
+            )}
           </div>
           {user?.emailVerified && (
             <div className="absolute -bottom-2 right-1 bg-text-primary text-background flex items-center gap-1 px-2.5 py-1 rounded-full border-2 border-surface shadow-sm">
@@ -344,6 +423,9 @@ export default function Profile() {
 
       {/* Trust Journey */}
       <TrustJourney user={user} />
+
+      {/* My Listings */}
+      <MyListings />
 
     </div>
   );
