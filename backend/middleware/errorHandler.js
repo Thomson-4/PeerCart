@@ -5,8 +5,16 @@ const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key (e.g. duplicate phone/email)
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    message = `${field} is already registered`;
+    const field = Object.keys(err.keyValue || {})[0] || 'field';
+    const value = err.keyValue?.[field];
+    // A null/undefined duplicate on phone means stale data — surface a helpful message
+    if (field === 'phone' && (value == null || value === '')) {
+      message = 'Account setup conflict — please try signing in instead, or contact support.';
+    } else if (field === 'email') {
+      message = 'This email is already registered. Please sign in instead.';
+    } else {
+      message = `${field} is already registered`;
+    }
     statusCode = 409;
   }
 

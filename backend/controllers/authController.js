@@ -219,6 +219,9 @@ const confirmEmail = async (req, res, next) => {
 
 // POST /api/auth/send-email-otp
 // Signs up OR signs in via college email. Validates domain against a known campus.
+// Body: { email, mode: 'login' | 'signup', name? }
+//   mode='login'  → fails if no account exists ("No account found, please sign up")
+//   mode='signup' → fails if a verified account already exists ("Already registered, please sign in")
 const sendEmailOtp = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -226,7 +229,7 @@ const sendEmailOtp = async (req, res, next) => {
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    const { email } = req.body;
+    const { email, mode = 'login', name } = req.body;
     const domain = email.split('@')[1]?.toLowerCase();
 
     // Must be a known campus domain
@@ -238,18 +241,42 @@ const sendEmailOtp = async (req, res, next) => {
       });
     }
 
+    const existingUser = await User.findOne({ email });
+
+    // Login mode: account must already exist
+    if (mode === 'login' && !existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found for this email. Please sign up first.',
+      });
+    }
+
+    // Signup mode: a verified account must NOT already exist
+    if (mode === 'signup' && existingUser?.emailVerified) {
+      return res.status(409).json({
+        success: false,
+        message: 'An account with this email already exists. Please sign in instead.',
+      });
+    }
+
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
 
-    // Upsert by email — create on first signup, update OTP on retry
-    await User.findOneAndUpdate(
-      { email },
-      { email, otp, otpExpiry, campus: campus._id },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    // Use find-then-save (never upsert) to avoid writing phone:null into new docs.
+    if (existingUser) {
+      existingUser.otp       = otp;
+      existingUser.otpExpiry = otpExpiry;
+      existingUser.campus    = campus._id;
+      if (mode === 'signup' && name?.trim()) existingUser.name = name.trim();
+      await existingUser.save();
+    } else {
+      const newDoc = { email, otp, otpExpiry, campus: campus._id };
+      if (name?.trim()) newDoc.name = name.trim();
+      await User.create(newDoc);
+    }
 
     // Send real OTP email via Gmail
-    await sendOtpEmail(email, otp, 'verification');
+    await sendOtpEmail(email, otp, mode === 'login' ? 'login' : 'verification');
 
     res.json({ success: true, message: 'OTP sent to your college email' });
   } catch (err) {
