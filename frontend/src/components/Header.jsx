@@ -1,46 +1,70 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Search, Moon, Sun, User } from 'lucide-react';
+import { ShoppingBag, Moon, Sun, User, Menu, X, Sparkles } from 'lucide-react';
 import logo from '../assets/Gemini_Generated_Image_5tzb215tzb215tzb.png';
+import { useAuth } from '../context/AuthContext';
+
+const navItems = [
+  { name: 'Home',       path: '/' },
+  { name: 'Shop Feed',  path: '/feed' },
+  { name: 'Need Board', path: '/needs' },
+  { name: 'Sell Item',  path: '/add' },
+];
 
 export default function Header({ theme, toggleTheme }) {
-  const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Shop Feed', path: '/feed' },
-    { name: 'Need Board', path: '/needs' },
-    { name: 'Sell an Item', path: '/add' },
-  ];
+  const [scrolled,    setScrolled]    = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false); }, []);
 
   return (
-    <div className="w-full relative z-50">
-      {/* Top Promotional Banner */}
-      <div className="bg-[#0cfba7] bg-gradient-to-r from-accent to-accent-hover text-white text-xs sm:text-sm font-bold flex items-center justify-center py-2 px-4 shadow-sm text-center">
-        ⚡ Trending now: Zero listing fee for your first 10 posts.
+    <>
+      {/* ── Promo Banner ─────────────────────────────────── */}
+      <div className="relative z-50 bg-gradient-to-r from-accent via-accent-hover to-accent text-white text-xs sm:text-sm font-bold flex items-center justify-center py-2.5 px-4 text-center gap-2">
+        <Sparkles size={13} className="text-secondary-accent shrink-0" />
+        <span>Zero listing fee for your first 10 posts — post now and save!</span>
+        <Sparkles size={13} className="text-secondary-accent shrink-0" />
       </div>
-      
-      {/* Main Header */}
-      <header className="w-full glass bg-surface/90 sticky top-0 transition-colors">
-        <div className="w-full px-4 sm:px-6 lg:px-12 h-24 sm:h-28 flex items-center justify-between">
-          
-          {/* Logo/Brand */}
-          <NavLink to="/feed" className="flex items-center gap-3 shrink-0">
+
+      {/* ── Main Header ──────────────────────────────────── */}
+      <header
+        className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+          scrolled
+            ? 'glass shadow-md shadow-black/10'
+            : 'bg-background/80 backdrop-blur-md'
+        }`}
+      >
+        <div className="w-full px-4 sm:px-6 lg:px-12 h-[68px] flex items-center justify-between gap-4">
+
+          {/* Logo */}
+          <NavLink to="/" className="flex items-center gap-2 shrink-0">
             <img
               src={logo}
               alt="PeerCart"
-              className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm transition-transform hover:scale-[1.02]"
+              className="h-14 w-auto object-contain drop-shadow-sm hover:scale-[1.03] transition-transform"
             />
           </NavLink>
 
-          {/* Desktop Navigation - Centered */}
-          <nav className="hidden md:flex items-center absolute justify-center left-1/2 -translate-x-1/2 gap-2 rounded-full border border-border-color bg-surface-elevated/80 px-3 py-2">
+          {/* Center nav — desktop */}
+          <nav className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-1 rounded-2xl border border-border-color bg-surface-elevated/70 px-2 py-1.5 backdrop-blur-sm">
             {navItems.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.path}
+                end={item.path === '/'}
                 className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-full text-xs lg:text-sm font-extrabold uppercase tracking-wide transition-all duration-200 ${
-                    isActive 
-                      ? 'text-white bg-accent shadow-md' 
-                      : 'text-text-primary hover:text-accent hover:bg-surface'
+                  `px-4 py-2 rounded-xl text-[13px] font-extrabold uppercase tracking-wide transition-all duration-200 ${
+                    isActive
+                      ? 'bg-accent text-white shadow-sm shadow-accent/30'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface'
                   }`
                 }
               >
@@ -49,36 +73,92 @@ export default function Header({ theme, toggleTheme }) {
             ))}
           </nav>
 
-          {/* Right Extras (Cart, User, Theme) */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <button className="text-text-primary hover:text-accent transition-colors p-2 hidden sm:block rounded-full bg-surface-elevated/80 border border-border-color">
-              <Search size={20} strokeWidth={2.5} />
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 text-text-secondary hover:text-accent transition-colors rounded-xl hover:bg-surface-elevated"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark'
+                ? <Sun size={19} strokeWidth={2.5} />
+                : <Moon size={19} strokeWidth={2.5} />}
             </button>
-            <button className="text-text-primary hover:text-accent transition-colors p-2 relative group hidden sm:block rounded-full bg-surface-elevated/80 border border-border-color">
-              <ShoppingCart size={20} strokeWidth={2.5} />
-              <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-secondary-accent text-white text-[9px] font-bold flex items-center justify-center group-hover:scale-110 transition-transform">
+
+            {/* Cart icon */}
+            <button className="relative p-2.5 text-text-secondary hover:text-accent transition-colors rounded-xl hover:bg-surface-elevated hidden sm:flex">
+              <ShoppingBag size={19} strokeWidth={2.5} />
+              <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-secondary-accent text-background text-[9px] font-black flex items-center justify-center">
                 2
               </span>
             </button>
-            
-            <div className="w-px h-6 bg-border-color hidden sm:block mx-1"></div>
 
-            <button 
-              onClick={toggleTheme}
-              className="p-2 text-text-primary hover:text-accent transition-colors rounded-full bg-surface-elevated/80 border border-border-color"
-              aria-label="Toggle Theme"
+            {/* Profile / Sign in */}
+            <NavLink
+              to={isAuthenticated ? '/profile' : '/login'}
+              className={({ isActive }) =>
+                `flex items-center gap-2 rounded-xl transition-all text-sm font-bold ${
+                  isActive
+                    ? 'text-accent'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated px-3 py-2'
+                }`
+              }
             >
-              {theme === 'dark' ? <Sun size={20} strokeWidth={2.5} /> : <Moon size={20} strokeWidth={2.5} />}
-            </button>
-            
-            <NavLink to="/profile" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-surface-elevated border-2 border-border-color overflow-hidden hover:border-accent transition-colors">
-                <img src="https://i.pravatar.cc/150?u=a042581f4e" alt="Profile" className="w-full h-full object-cover" />
-              </div>
+              {isAuthenticated
+                ? (
+                  <img
+                    src="https://i.pravatar.cc/150?u=peercart"
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full border-2 border-accent/40 object-cover hover:border-accent transition-colors"
+                  />
+                )
+                : (
+                  <>
+                    <User size={17} strokeWidth={2.5} />
+                    <span className="hidden sm:inline">Sign in</span>
+                  </>
+                )}
             </NavLink>
+
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="md:hidden p-2.5 text-text-secondary hover:text-text-primary transition-colors rounded-xl hover:bg-surface-elevated"
+              aria-label="Menu"
+            >
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
+
+        {/* ── Mobile menu ────────────────────────────────── */}
+        <div
+          className={`md:hidden overflow-hidden transition-all duration-300 ${
+            mobileOpen ? 'max-h-80 border-t border-border-color' : 'max-h-0'
+          }`}
+        >
+          <nav className="px-4 py-4 flex flex-col gap-1 bg-surface/95 backdrop-blur-md">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                end={item.path === '/'}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                    isActive
+                      ? 'bg-accent text-white'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+                  }`
+                }
+              >
+                {item.name}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
       </header>
-    </div>
+    </>
   );
 }

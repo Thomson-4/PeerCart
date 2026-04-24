@@ -1,59 +1,91 @@
-import { Heart, MapPin, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Heart, MapPin, ArrowRight, ShieldCheck } from 'lucide-react';
 
-export default function ItemCard({ image, title, price, distance, type, isLiked = false }) {
+const TAG_STYLES = {
+  Sell: { pill: 'bg-accent text-white',                               glow: 'shadow-accent/30' },
+  Rent: { pill: 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30',    glow: 'shadow-neon-cyan/20' },
+  Buy:  { pill: 'bg-secondary-accent/20 text-secondary-accent border border-secondary-accent/30', glow: 'shadow-secondary-accent/20' },
+};
+
+export default function ItemCard({
+  image, title, price, distance, type, category, isLiked: initialLiked = false,
+}) {
+  const [liked, setLiked] = useState(initialLiked);
+  const tag = TAG_STYLES[type] || TAG_STYLES.Sell;
   const ctaText = type === 'Sell' ? 'Make Offer' : type === 'Rent' ? 'Rent Now' : 'Quick View';
-  const tagColor =
-    type === 'Sell'
-      ? 'bg-accent text-white'
-      : type === 'Rent'
-      ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/40'
-      : 'bg-secondary-accent/20 text-secondary-accent border border-secondary-accent/40';
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-[1.2rem] border border-border-color bg-surface/80 transition-all duration-300 gradient-stroke hover:-translate-y-1 hover:border-accent/60">
-      <div className="relative aspect-[4/5] overflow-hidden bg-surface-elevated p-4">
-        <img 
-          src={image} 
-          alt={title} 
-          className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-700 ease-out"
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border-color bg-surface transition-all duration-300 hover:-translate-y-2 hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10">
+
+      {/* ── Image area ────────────────────────────────────── */}
+      <div className="relative aspect-[4/5] overflow-hidden bg-surface-elevated">
+        <img
+          src={image}
+          alt={title}
+          loading="lazy"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         />
-        
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold tracking-widest uppercase shadow-sm ${tagColor}`}>
+
+        {/* Dark overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Tag */}
+        <div className="absolute top-3 left-3">
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-sm ${tag.pill}`}>
             {type}
           </span>
         </div>
-        
-        <button className="absolute top-3 right-3 rounded-full border border-border-color bg-surface/85 p-2 text-text-secondary shadow-sm transition-colors hover:text-secondary-accent">
-          <Heart size={20} className={isLiked ? 'fill-secondary-accent text-secondary-accent' : ''} />
+
+        {/* Like button */}
+        <button
+          onClick={() => setLiked(!liked)}
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-200 shadow-sm ${
+            liked
+              ? 'bg-pink-500/20 border-pink-500/40 text-pink-400'
+              : 'bg-surface/80 border-border-color text-text-secondary hover:text-pink-400 hover:border-pink-400/30'
+          }`}
+          aria-label={liked ? 'Unlike' : 'Like'}
+        >
+          <Heart size={14} className={liked ? 'fill-current' : ''} />
         </button>
 
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 opacity-0 transition-opacity duration-300 backdrop-blur-[2px] group-hover:opacity-100">
-          <button className="flex translate-y-4 items-center gap-2 rounded-full bg-text-primary px-6 py-3 font-bold text-background shadow-lg transition-all duration-300 group-hover:translate-y-0 hover:bg-accent">
-            {ctaText} <ChevronRight size={16} strokeWidth={3} />
+        {/* CTA overlay */}
+        <div className="absolute inset-0 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <button className="flex items-center gap-2 bg-text-primary text-background text-sm font-bold px-5 py-2.5 rounded-full shadow-lg translate-y-3 group-hover:translate-y-0 transition-all duration-300 hover:bg-accent hover:text-white">
+            {ctaText} <ArrowRight size={14} strokeWidth={2.5} />
           </button>
         </div>
       </div>
 
-      <div className="p-5 flex flex-col flex-1 gap-2">
-        <div className="flex justify-between items-start gap-4">
-          <h3 className="text-base font-bold text-text-primary leading-tight line-clamp-2">{title}</h3>
-        </div>
-        
-        <div className="flex items-center gap-1.5 text-xs text-text-secondary mt-1">
-          <MapPin size={14} className="text-accent" />
-          <span className="font-semibold uppercase tracking-wide">{distance}</span>
+      {/* ── Info ──────────────────────────────────────────── */}
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        {/* Category + distance */}
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">{category}</span>
+          <div className="flex items-center gap-1 text-[10px] text-text-secondary font-semibold">
+            <MapPin size={10} className="text-accent" />
+            {distance}
+          </div>
         </div>
 
-        <div className="mt-auto pt-4 flex items-end justify-between border-t border-border-color border-dashed">
-          <span className="text-2xl font-extrabold text-accent tracking-tighter">
-            ₹{price}
-          </span>
-          <button className="md:hidden text-xs font-bold text-secondary-accent uppercase flex items-center gap-1">
-            {ctaText} <ChevronRight size={14} strokeWidth={3} />
-          </button>
+        {/* Title */}
+        <h3 className="text-sm font-bold text-text-primary leading-snug line-clamp-2 flex-1">
+          {title}
+        </h3>
+
+        {/* Price + verified */}
+        <div className="flex items-center justify-between mt-auto pt-3 border-t border-border-color border-dashed">
+          <span className="text-xl font-black text-accent tracking-tight">{price}</span>
+          <div className="flex items-center gap-1 text-[10px] font-bold text-text-secondary/70">
+            <ShieldCheck size={11} className="text-accent/60" />
+            Verified
+          </div>
         </div>
       </div>
+
+      {/* ── Ambient glow on hover ─────────────────────────── */}
+      <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+           style={{ boxShadow: 'inset 0 0 0 1px rgba(167,139,250,0.15)' }} />
     </article>
   );
 }
