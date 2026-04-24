@@ -29,7 +29,7 @@ export const auth = {
   sendOtp:        (phone)        => req('/api/auth/send-otp',          { method: 'POST', body: JSON.stringify({ phone }) }),
   verifyOtp:      (phone, otp)   => req('/api/auth/verify-otp',        { method: 'POST', body: JSON.stringify({ phone, otp }) }),
   // College email OTP (Level 1 — domain validated at send time)
-  sendEmailOtp:   (email)        => req('/api/auth/send-email-otp',    { method: 'POST', body: JSON.stringify({ email }) }),
+  sendEmailOtp:   (email, mode = 'login', name) => req('/api/auth/send-email-otp', { method: 'POST', body: JSON.stringify({ email, mode, ...(name && { name }) }) }),
   verifyEmailOtp: (email, otp)   => req('/api/auth/verify-email-otp',  { method: 'POST', body: JSON.stringify({ email, otp }) }),
   // Session & email verification
   me:             ()             => req('/api/auth/me'),
