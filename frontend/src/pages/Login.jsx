@@ -177,7 +177,7 @@ function EmailTab() {
         <div className="flex items-start gap-3 bg-accent/5 border border-accent/20 rounded-xl px-4 py-3">
           <ShieldCheck size={14} className="text-accent shrink-0 mt-0.5" />
           <p className="text-xs text-text-secondary">
-            Only <strong>@reva.edu.in</strong> emails accepted. Logs you in at <strong>Trust Level 1</strong> — selling unlocked immediately.
+            Only <strong>@reva.edu.in</strong> emails accepted. First time? We'll <strong>create your account</strong> automatically and verify your email in one step — straight to <strong>Trust Level 1</strong>.
           </p>
         </div>
       </form>
@@ -311,12 +311,12 @@ function PasswordTab() {
 /* ─── Main Login Page ───────────────────────────────────────────── */
 export default function Login() {
   const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') === 'password' ? 'password' : 'phone';
-  const [tab, setTab] = useState(defaultTab); // 'phone' | 'email' | 'password'
+  const defaultTab = searchParams.get('tab') === 'password' ? 'password' : searchParams.get('tab') === 'phone' ? 'phone' : 'email';
+  const [tab, setTab] = useState(defaultTab); // 'email' | 'phone' | 'password'
 
   const TABS = [
-    { id: 'phone',    label: 'Mobile OTP',   icon: Phone },
     { id: 'email',    label: 'College Email', icon: Mail },
+    { id: 'phone',    label: 'Mobile OTP',   icon: Phone },
     { id: 'password', label: 'Password',      icon: Lock },
   ];
 
@@ -333,9 +333,9 @@ export default function Login() {
             <ShieldCheck size={32} className="text-accent" />
           </div>
           <h1 className="text-3xl font-black tracking-tight">
-            Welcome <span className="gradient-text">back</span>
+            Sign in or <span className="gradient-text">Sign up</span>
           </h1>
-          <p className="text-text-secondary mt-2">Sign in to your campus marketplace</p>
+          <p className="text-text-secondary mt-2">New here? Enter your college email — we'll create your account automatically.</p>
         </div>
 
         <div className="glass-card gradient-stroke p-8 space-y-6">
