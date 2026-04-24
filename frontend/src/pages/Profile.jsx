@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  CheckCircle2, Circle, Star, ShieldCheck, Mail,
-  Loader, LogOut, ChevronRight, Terminal, Lock,
+  CheckCircle2, Star, ShieldCheck,
+  Loader, LogOut, ChevronRight, Lock,
 } from 'lucide-react';
 import { auth as authApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -43,21 +43,22 @@ const LEVELS = [
   },
 ];
 
-/* ─── Email verification sub-form ───────────────────────────────── */
-function EmailVerifyForm({ onSent }) {
+/* ─── Email OTP verification sub-form ───────────────────────────── */
+function EmailVerifyForm({ onVerified }) {
   const [email,   setEmail]   = useState('');
+  const [otp,     setOtp]     = useState('');
+  const [step,    setStep]    = useState('email'); // 'email' | 'otp'
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
-  const [sent,    setSent]    = useState(false);
+  const { refreshUser } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await authApi.verifyEmail(email);
-      setSent(true);
-      onSent?.();
+      await authApi.sendEmailOtp(email);
+      setStep('otp');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -65,20 +66,55 @@ function EmailVerifyForm({ onSent }) {
     }
   };
 
-  if (sent) {
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await authApi.verifyEmailOtp(email, otp);
+      await refreshUser();
+      onVerified?.();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (step === 'otp') {
     return (
-      <div className="mt-4 bg-green-400/10 border border-green-400/20 rounded-xl px-4 py-3 text-sm text-green-400">
-        <p className="font-bold mb-1">Verification link sent!</p>
-        <p className="text-green-400/80 flex items-center gap-1.5">
-          <Terminal size={13} />
-          Check your <strong>backend terminal</strong> for the link (dev mode).
-        </p>
-      </div>
+      <form onSubmit={handleVerifyOtp} className="mt-4 space-y-3">
+        <p className="text-xs text-text-secondary">OTP sent to <strong className="text-text-primary">{email}</strong></p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="6-digit OTP"
+            maxLength={6}
+            className="input-base flex-1 text-center text-xl tracking-[0.4em] font-black"
+            autoFocus
+            required
+          />
+          <button
+            type="submit"
+            disabled={loading || otp.length < 6}
+            className="px-4 py-2 bg-accent text-white font-bold rounded-xl text-sm disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
+          >
+            {loading ? <Loader size={14} className="animate-spin" /> : <><ShieldCheck size={14} /> Verify</>}
+          </button>
+        </div>
+        {error && <p className="text-red-400 text-xs">{error}</p>}
+        <button type="button" onClick={() => { setStep('email'); setOtp(''); setError(''); }}
+          className="text-xs text-text-secondary hover:text-text-primary transition-colors">
+          ← Change email
+        </button>
+      </form>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+    <form onSubmit={handleSendOtp} className="mt-4 space-y-3">
       <div className="flex gap-2">
         <input
           type="email"
@@ -93,11 +129,11 @@ function EmailVerifyForm({ onSent }) {
           disabled={loading}
           className="px-4 py-2 bg-accent text-white font-bold rounded-xl text-sm hover:bg-accent-hover transition-colors disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
         >
-          {loading ? <Loader size={14} className="animate-spin" /> : <>Send link <ChevronRight size={14} /></>}
+          {loading ? <Loader size={14} className="animate-spin" /> : <>Send OTP <ChevronRight size={14} /></>}
         </button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
-      <p className="text-xs text-text-secondary">Must use your campus email (e.g. @reva.edu.in)</p>
+      <p className="text-xs text-text-secondary">Must use your campus email (@reva.edu.in)</p>
     </form>
   );
 }
@@ -106,7 +142,7 @@ function EmailVerifyForm({ onSent }) {
 function TrustJourney({ user }) {
   const current = user?.trustLevel ?? 0;
   const txCount = user?.completedTransactions ?? 0;
-  const [emailSent, setEmailSent] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   return (
     <div className="bento-panel p-6 md:p-7">
@@ -153,18 +189,18 @@ function TrustJourney({ user }) {
                   </div>
                   <p className="text-xs text-text-secondary mt-0.5">{sublabel}</p>
 
-                  {/* Level 0 → 1 action: verify email */}
-                  {active && level === 0 && !emailSent && (
+                  {/* Level 0 → 1 action: verify email via OTP */}
+                  {active && level === 0 && !emailVerified && (
                     <div className="mt-3">
                       <p className="text-xs font-semibold text-text-primary mb-1">
-                        Next step: verify your college email to unlock selling
+                        Verify your @reva.edu.in email to unlock selling
                       </p>
-                      <EmailVerifyForm onSent={() => setEmailSent(true)} />
+                      <EmailVerifyForm onVerified={() => setEmailVerified(true)} />
                     </div>
                   )}
-                  {active && level === 0 && emailSent && (
-                    <div className="mt-3 text-xs text-text-secondary bg-surface-elevated rounded-xl px-3 py-2">
-                      Waiting for email confirmation…
+                  {active && level === 0 && emailVerified && (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-green-400 bg-green-400/10 border border-green-400/20 rounded-xl px-3 py-2">
+                      <CheckCircle2 size={14} /> Email verified! Refresh the page to see Level 1.
                     </div>
                   )}
 
