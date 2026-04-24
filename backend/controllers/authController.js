@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Campus = require('../models/Campus');
 const { generateJWT, generateOTP, generateEmailToken } = require('../utils/generateToken');
+const { sendOtpEmail } = require('../utils/mailer');
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000;          // 10 minutes
 const EMAIL_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -246,8 +247,8 @@ const sendEmailOtp = async (req, res, next) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // Mock mailer — replace with SendGrid / Nodemailer in production
-    console.log(`[MOCK EMAIL OTP] OTP for ${email}: ${otp}`);
+    // Send real OTP email via Gmail
+    await sendOtpEmail(email, otp, 'verification');
 
     res.json({ success: true, message: 'OTP sent to your college email' });
   } catch (err) {
