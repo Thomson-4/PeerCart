@@ -145,6 +145,17 @@ export default function AddItem() {
     setError('');
     setSubmitting(true);
     try {
+      // Upload image to Cloudinary if user selected a file directly.
+      // (QR-upload path already stores the Cloudinary URL in imagePreview.)
+      let imageUrl = null;
+      if (imageFile) {
+        const result = await uploadApi.uploadImage(imageFile);
+        imageUrl = result.url;
+      } else if (imagePreview && imagePreview.startsWith('https://')) {
+        // QR mobile upload — imagePreview is already the Cloudinary URL
+        imageUrl = imagePreview;
+      }
+
       const body = {
         title:              formData.title.trim(),
         description:        formData.description.trim(),
@@ -153,6 +164,7 @@ export default function AddItem() {
         type:               formData.type,
         price:              Math.round(parseFloat(formData.price) * 100), // rupees → paise
         liveCaptureVerified,
+        ...(imageUrl ? { images: [imageUrl] } : {}),
       };
       await listingsApi.create(body);
       setSuccess(true);
