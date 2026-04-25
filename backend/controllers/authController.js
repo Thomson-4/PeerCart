@@ -232,6 +232,31 @@ const sendEmailOtp = async (req, res, next) => {
     const { email, mode = 'login', name } = req.body;
     const domain = email.split('@')[1]?.toLowerCase();
 
+    // DEV BYPASS: skip real OTP, upsert user and tell client to use 000000
+    if (process.env.DEV_BYPASS === 'true') {
+      const campus = await Campus.findOne({ active: true });
+      let user = await User.findOne({ email });
+      if (mode === 'login' && !user) {
+        return res.status(404).json({ success: false, message: 'No account found for this email. Please sign up first.' });
+      }
+      if (mode === 'signup' && user?.emailVerified) {
+        return res.status(409).json({ success: false, message: 'An account with this email already exists. Please sign in instead.' });
+      }
+      if (user) {
+        user.otp = '000000';
+        user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
+        if (campus) user.campus = campus._id;
+        if (mode === 'signup' && name?.trim()) user.name = name.trim();
+        await user.save();
+      } else {
+        const newDoc = { email, otp: '000000', otpExpiry: new Date(Date.now() + OTP_EXPIRY_MS), campus: campus?._id };
+        if (name?.trim()) newDoc.name = name.trim();
+        await User.create(newDoc);
+      }
+      console.log(`[DEV] Email OTP bypass — use 000000 for ${email}`);
+      return res.json({ success: true, message: 'OTP sent (dev: use 000000)' });
+    }
+
     // Must be a known campus domain
     const campus = await Campus.findOne({ emailDomain: domain, active: true });
     if (!campus) {
@@ -295,6 +320,22 @@ const verifyEmailOtp = async (req, res, next) => {
     }
 
     const { email, otp } = req.body;
+
+    // DEV BYPASS: accept 000000 without real OTP check
+    if (process.env.DEV_BYPASS === 'true' && otp === '000000') {
+      let user = await User.findOne({ email });
+      if (!user) return res.status(400).json({ success: false, message: 'No OTP requested for this email' });
+      user.emailVerified = true;
+      user.otp = undefined;
+      user.otpExpiry = undefined;
+      if (user.trustLevel < 1) user.trustLevel = 1;
+      await user.save();
+      return res.json({
+        success: true,
+        token: generateJWT(user._id),
+        user: { id: user._id, email: user.email, phone: user.phone, name: user.name, trustLevel: user.trustLevel, campus: user.campus },
+      });
+    }
 
     const user = await User.findOne({ email }).select('+otp +otpExpiry');
 
