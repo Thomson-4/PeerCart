@@ -26,7 +26,8 @@ const sendViaResend = async (to, subject, html) => {
   console.log(`[EMAIL] OTP sent to ${to} via Resend`);
 };
 
-// ── Gmail SMTP fallback ────────────────────────────────────────────────────────
+// ── Gmail SMTP ────────────────────────────────────────────────────────────────
+// Use port 465 (SSL) — more reliable on cloud hosts than 587 (STARTTLS)
 let _transporter = null;
 const getTransporter = () => {
   if (_transporter) return _transporter;
@@ -34,7 +35,9 @@ const getTransporter = () => {
   const pass = process.env.EMAIL_PASS;
   if (!user || !pass || user.startsWith('your_')) return null;
   _transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // SSL from the start (not STARTTLS)
     auth: { user, pass },
   });
   return _transporter;
@@ -94,11 +97,13 @@ const sendOtpEmail = async (to, otp, purpose = 'verification') => {
     </div>
   `;
 
-  // Use Resend if configured, otherwise fall back to Gmail
-  if (process.env.RESEND_API_KEY) {
+  // Gmail first (port 465 SSL), Resend as fallback
+  if (process.env.EMAIL_USER && !process.env.EMAIL_USER.startsWith('your_')) {
+    await sendViaGmail(to, subject, html);
+  } else if (process.env.RESEND_API_KEY) {
     await sendViaResend(to, subject, html);
   } else {
-    await sendViaGmail(to, subject, html);
+    console.log(`[MOCK EMAIL] No mailer configured — OTP for ${to}: ${otp}`);
   }
 };
 
