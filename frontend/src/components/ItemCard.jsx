@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Heart, MapPin, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Heart, MapPin, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 
 const TAG_STYLES = {
   Sell: { pill: 'bg-accent text-white',                               glow: 'shadow-accent/30' },
@@ -8,14 +9,29 @@ const TAG_STYLES = {
 };
 
 export default function ItemCard({
-  image, title, price, distance, type, category, isLiked: initialLiked = false,
+  id, image, title, price, distance, type, category, isLiked: initialLiked = false, urgent = false,
 }) {
   const [liked, setLiked] = useState(initialLiked);
+  const navigate = useNavigate();
   const tag = TAG_STYLES[type] || TAG_STYLES.Sell;
-  const ctaText = type === 'Sell' ? 'Make Offer' : type === 'Rent' ? 'Rent Now' : 'Quick View';
+  const ctaText = type === 'Sell' ? 'View & Buy' : type === 'Rent' ? 'View & Rent' : 'Quick View';
+
+  const isDemo = !id || String(id).startsWith('demo-');
+
+  const handleClick = () => {
+    if (!isDemo && id) navigate(`/listing/${id}`);
+  };
+
+  const handleLike = (e) => {
+    e.stopPropagation(); // don't trigger card navigation
+    setLiked(!liked);
+  };
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border-color bg-surface transition-all duration-300 hover:-translate-y-2 hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10">
+    <article
+      onClick={handleClick}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border border-border-color bg-surface transition-all duration-300 hover:-translate-y-2 hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10 ${!isDemo ? 'cursor-pointer' : ''}`}
+    >
 
       {/* ── Image area ────────────────────────────────────── */}
       <div className="relative aspect-[4/5] overflow-hidden bg-surface-elevated">
@@ -29,16 +45,21 @@ export default function ItemCard({
         {/* Dark overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Tag */}
-        <div className="absolute top-3 left-3">
+        {/* Type tag */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-sm ${tag.pill}`}>
             {type}
           </span>
+          {urgent && type === 'Rent' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-orange-500/20 text-orange-400 border border-orange-500/30">
+              <Zap size={9} /> Urgent
+            </span>
+          )}
         </div>
 
         {/* Like button */}
         <button
-          onClick={() => setLiked(!liked)}
+          onClick={handleLike}
           className={`absolute top-3 right-3 w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-200 shadow-sm ${
             liked
               ? 'bg-pink-500/20 border-pink-500/40 text-pink-400'
@@ -50,11 +71,13 @@ export default function ItemCard({
         </button>
 
         {/* CTA overlay */}
-        <div className="absolute inset-0 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
-          <button className="flex items-center gap-2 bg-text-primary text-background text-sm font-bold px-5 py-2.5 rounded-full shadow-lg translate-y-3 group-hover:translate-y-0 transition-all duration-300 hover:bg-accent hover:text-white">
-            {ctaText} <ArrowRight size={14} strokeWidth={2.5} />
-          </button>
-        </div>
+        {!isDemo && (
+          <div className="absolute inset-0 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="flex items-center gap-2 bg-text-primary text-background text-sm font-bold px-5 py-2.5 rounded-full shadow-lg translate-y-3 group-hover:translate-y-0 transition-all duration-300">
+              {ctaText} <ArrowRight size={14} strokeWidth={2.5} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Info ──────────────────────────────────────────── */}

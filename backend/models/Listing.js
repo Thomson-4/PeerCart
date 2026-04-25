@@ -27,6 +27,9 @@ const listingSchema = new mongoose.Schema(
     seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User',   required: true },
     campus: { type: mongoose.Schema.Types.ObjectId, ref: 'Campus', required: true },
 
+    // Rent urgency — buyer signals they need this soon
+    urgent: { type: Boolean, default: false },
+
     // Round 8A — Live capture enforcement
     liveCaptureVerified: { type: Boolean, default: false },
     photoTakenAt:        { type: Date,    default: null },
