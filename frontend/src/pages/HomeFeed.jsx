@@ -51,6 +51,7 @@ const mapListing = (l) => ({
   distance: 'Nearby',
   image:    l.images?.[0] || FALLBACK,
   isLiked:  false,
+  urgent:   l.urgent || false,
 });
 
 /* ── Skeleton card ──────────────────────────────────────────────── */

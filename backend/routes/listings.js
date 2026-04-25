@@ -42,6 +42,7 @@ const createValidators = [
   body('images').optional().isArray({ max: 5 }).withMessage('Maximum 5 images allowed'),
   body('images.*').optional().isURL().withMessage('Each image must be a valid URL'),
   body('liveCaptureVerified').optional().isBoolean(),
+  body('urgent').optional().isBoolean(),
 ];
 
 const updateValidators = [

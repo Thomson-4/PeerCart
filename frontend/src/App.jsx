@@ -10,6 +10,8 @@ import AddItem from './pages/AddItem';
 import Profile from './pages/Profile';
 import ConfirmEmail from './pages/ConfirmEmail';
 import MobileUpload from './pages/MobileUpload';
+import ListingDetail from './pages/ListingDetail';
+import Messages from './pages/Messages';
 import useTheme from './hooks/useTheme';
 
 function ProtectedRoute({ children }) {
@@ -29,11 +31,14 @@ function AppRoutes() {
 
       {/* All pages that share Header + Footer */}
       <Route element={<MainLayout theme={theme} toggleTheme={toggleTheme} />}>
-        <Route path="/"        element={<Landing />} />
-        <Route path="/feed"    element={<ProtectedRoute><HomeFeed /></ProtectedRoute>} />
-        <Route path="/needs"   element={<ProtectedRoute><NeedBoard /></ProtectedRoute>} />
-        <Route path="/add"     element={<ProtectedRoute><AddItem /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/"               element={<Landing />} />
+        <Route path="/feed"           element={<ProtectedRoute><HomeFeed /></ProtectedRoute>} />
+        <Route path="/listing/:id"    element={<ProtectedRoute><ListingDetail /></ProtectedRoute>} />
+        <Route path="/needs"          element={<ProtectedRoute><NeedBoard /></ProtectedRoute>} />
+        <Route path="/add"            element={<ProtectedRoute><AddItem /></ProtectedRoute>} />
+        <Route path="/profile"        element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/messages"       element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+        <Route path="/messages/:convId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

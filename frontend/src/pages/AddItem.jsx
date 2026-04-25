@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   UploadCloud, Send, Loader, Lock, ShieldCheck,
-  Camera, X, CheckCircle2, Smartphone, ImageIcon, QrCode,
+  Camera, X, CheckCircle2, Smartphone, ImageIcon, QrCode, Zap,
 } from 'lucide-react';
 import { listings as listingsApi, upload as uploadApi } from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
@@ -25,7 +25,7 @@ const CONDITIONS = [
 
 const EMPTY = {
   title: '', description: '', category: 'textbooks',
-  condition: 'good', type: 'sell', price: '',
+  condition: 'good', type: 'sell', price: '', urgent: false,
 };
 
 // Detect mobile device
@@ -165,6 +165,7 @@ export default function AddItem() {
         price:              Math.round(parseFloat(formData.price) * 100), // rupees → paise
         liveCaptureVerified,
         ...(imageUrl ? { images: [imageUrl] } : {}),
+        ...(formData.type === 'rent' ? { urgent: formData.urgent } : {}),
       };
       await listingsApi.create(body);
       setSuccess(true);
@@ -377,6 +378,21 @@ export default function AddItem() {
               <p className="text-yellow-400 text-xs mt-2">
                 Rent listings require Trust Level 2. You'll need to complete more transactions first.
               </p>
+            )}
+            {/* Urgent toggle for rent */}
+            {formData.type === 'rent' && (
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, urgent: !prev.urgent }))}
+                className={`mt-2 w-full flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-bold transition-all ${
+                  formData.urgent
+                    ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
+                    : 'border-border-color text-text-secondary hover:border-orange-500/30 hover:text-orange-300'
+                }`}
+              >
+                <Zap size={16} className={formData.urgent ? 'text-orange-400' : ''} />
+                <span>{formData.urgent ? '⚡ Marked as Urgent — renters will see priority badge' : 'Mark as Urgent (need to rent out ASAP)'}</span>
+              </button>
             )}
           </div>
 
