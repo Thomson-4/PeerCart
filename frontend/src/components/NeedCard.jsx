@@ -1,6 +1,6 @@
-import { Clock, MessageCircle, MapPin } from 'lucide-react';
+import { Clock, MessageCircle, MapPin, Loader } from 'lucide-react';
 
-export default function NeedCard({ user, title, urgency, timeframe, distance, description, reward, onHaveThis }) {
+export default function NeedCard({ user, title, urgency, timeframe, distance, description, reward, onHaveThis, contacting = false }) {
   return (
     <article className="glass-card gradient-stroke p-5 group transition-all duration-300 hover:border-secondary-accent/50">
       <div className="flex justify-between items-start mb-4">
@@ -53,10 +53,11 @@ export default function NeedCard({ user, title, urgency, timeframe, distance, de
         
         <button
           onClick={onHaveThis}
-          className="flex items-center gap-2 bg-secondary-accent text-background px-4 py-2 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(180,255,57,0.26)] hover:scale-105 transition-transform"
+          disabled={contacting}
+          className="flex items-center gap-2 bg-secondary-accent text-background px-4 py-2 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(180,255,57,0.26)] hover:scale-105 transition-transform disabled:opacity-60"
         >
-          <MessageCircle size={16} />
-          I have this
+          {contacting ? <Loader size={16} className="animate-spin" /> : <MessageCircle size={16} />}
+          {contacting ? 'Opening…' : 'I have this'}
         </button>
       </div>
     </article>

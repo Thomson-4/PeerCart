@@ -2,7 +2,9 @@ const mongoose = require('mongoose');
 
 const conversationSchema = new mongoose.Schema(
   {
-    listing: { type: mongoose.Schema.Types.ObjectId, ref: 'Listing', required: true },
+    // Either listing OR need must be present (enforced in controller)
+    listing: { type: mongoose.Schema.Types.ObjectId, ref: 'Listing', default: null },
+    need:    { type: mongoose.Schema.Types.ObjectId, ref: 'Need',    default: null },
 
     // Exactly 2 participants: buyer + seller
     participants: {
@@ -28,5 +30,7 @@ const conversationSchema = new mongoose.Schema(
 conversationSchema.index({ participants: 1 });
 // Fast lookup: existing convo between listing + pair of users
 conversationSchema.index({ listing: 1, participants: 1 });
+// Fast lookup: existing convo between need + pair of users
+conversationSchema.index({ need: 1, participants: 1 });
 
 module.exports = mongoose.model('Conversation', conversationSchema);

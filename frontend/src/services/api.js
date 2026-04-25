@@ -66,11 +66,12 @@ export const transactions = {
 };
 
 export const chat = {
-  getOrCreate:    (listingId, participantId) => req('/api/chat/conversations',          { method: 'POST', body: JSON.stringify({ listingId, participantId }) }),
-  getConversations: ()                       => req('/api/chat/conversations'),
-  getMessages:    (convId, params = {})      => req(`/api/chat/conversations/${convId}/messages${qs(params)}`),
-  sendMessage:    (convId, content)          => req(`/api/chat/conversations/${convId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
-  unreadCount:    ()                         => req('/api/chat/unread-count'),
+  // Pass { listingId } for listing chats, { needId } for need-board chats
+  getOrCreate:      (params)          => req('/api/chat/conversations', { method: 'POST', body: JSON.stringify(params) }),
+  getConversations: ()                => req('/api/chat/conversations'),
+  getMessages:      (convId, p = {})  => req(`/api/chat/conversations/${convId}/messages${qs(p)}`),
+  sendMessage:      (convId, content) => req(`/api/chat/conversations/${convId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+  unreadCount:      ()                => req('/api/chat/unread-count'),
 };
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';

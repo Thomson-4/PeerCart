@@ -67,7 +67,7 @@ export default function ListingDetail() {
     setChatError('');
     setChatLoading(true);
     try {
-      const convData = await chatApi.getOrCreate(listing._id);
+      const convData = await chatApi.getOrCreate({ listingId: listing._id });
       const conv     = convData.conversation;
 
       // Auto-send the interest message
