@@ -36,6 +36,11 @@ export function AuthProvider({ children }) {
     } catch { /* token expired — leave state as-is */ }
   }, []);
 
+  // On every page load, fetch fresh user data from server (picks up trustLevel changes)
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
+
   // Sync user data if token changes externally (e.g. another tab)
   useEffect(() => {
     const sync = () => {
