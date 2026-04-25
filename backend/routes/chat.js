@@ -25,10 +25,14 @@ const messageLimiter = rateLimit({
 router.use(protect);
 
 // Create or fetch conversation (trust level 1+ to initiate)
+// Body: { listingId } OR { needId }
 router.post(
   '/conversations',
   requireTrust(1),
-  [body('listingId').notEmpty().withMessage('listingId is required')],
+  [
+    body('listingId').optional().isMongoId().withMessage('listingId must be a valid ID'),
+    body('needId').optional().isMongoId().withMessage('needId must be a valid ID'),
+  ],
   createOrGetConversation
 );
 

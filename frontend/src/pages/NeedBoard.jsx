@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Send, Filter, Search, Loader } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import NeedCard from '../components/NeedCard';
-import { needs as needsApi } from '../services/api';
+import { needs as needsApi, chat as chatApi } from '../services/api';
 
 const CATEGORIES = [
   { label: 'Textbooks',   value: 'textbooks' },
@@ -35,6 +36,7 @@ const mapNeed = (n) => ({
 const EMPTY_FORM = { title: '', description: '', category: 'textbooks', type: 'buy', maxBudget: '' };
 
 export default function NeedBoard() {
+  const navigate = useNavigate();
   const [needs,         setNeeds]         = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [submitting,    setSubmitting]     = useState(false);
@@ -43,6 +45,21 @@ export default function NeedBoard() {
   const [query,         setQuery]         = useState('');
   const [urgencyFilter, setUrgencyFilter] = useState('All');
   const [formData,      setFormData]      = useState(EMPTY_FORM);
+  const [contactingId,  setContactingId]  = useState(null);
+
+  const handleHaveThis = async (needId, needTitle) => {
+    setContactingId(needId);
+    try {
+      const data = await chatApi.getOrCreate({ needId });
+      const conv  = data.conversation;
+      await chatApi.sendMessage(conv._id, `Hi! I saw your need for "${needTitle}" — I have this! Let's connect.`);
+      navigate(`/messages/${conv._id}`);
+    } catch (err) {
+      alert(err.message || 'Could not start conversation');
+    } finally {
+      setContactingId(null);
+    }
+  };
 
   const fetchNeeds = async () => {
     setLoading(true);
@@ -219,7 +236,12 @@ export default function NeedBoard() {
         {!loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6">
             {filteredNeeds.map((need) => (
-              <NeedCard key={need.id} {...need} onHaveThis={() => window.alert(`Connect with ${need.user.name}`)} />
+              <NeedCard
+                key={need.id}
+                {...need}
+                contacting={contactingId === need.id}
+                onHaveThis={() => handleHaveThis(need.id, need.title)}
+              />
             ))}
             {filteredNeeds.length === 0 && (
               <div className="bento-panel p-6 text-center text-text-secondary md:col-span-2">
