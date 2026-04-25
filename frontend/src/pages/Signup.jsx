@@ -40,6 +40,30 @@ function StrengthBar({ password }) {
   );
 }
 
+/* ─── Reusable field — must be OUTSIDE Signup to keep focus on re-render ── */
+function Field({ id, label, icon: Icon, type = 'text', placeholder, value, onChange, error: ferr, children }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-bold uppercase tracking-wide mb-2">
+        {label}
+      </label>
+      <div className="relative">
+        {Icon && <Icon size={16} className="absolute top-1/2 -translate-y-1/2 left-4 text-text-secondary pointer-events-none" />}
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`input-base ${Icon ? 'pl-10' : ''} ${ferr ? 'border-red-400/50 focus:border-red-400' : ''}`}
+        />
+        {children}
+      </div>
+      {ferr && <p className="text-red-400 text-xs mt-1.5 font-medium">{ferr}</p>}
+    </div>
+  );
+}
+
 /* ─── Signup Page ───────────────────────────────────────────────── */
 export default function Signup() {
   const [form, setForm] = useState({
@@ -99,27 +123,6 @@ export default function Signup() {
       setLoading(false);
     }
   };
-
-  const Field = ({ id, label, icon: Icon, type = 'text', placeholder, value, onChange, error: ferr, children }) => (
-    <div>
-      <label htmlFor={id} className="block text-sm font-bold uppercase tracking-wide mb-2">
-        {label}
-      </label>
-      <div className="relative">
-        {Icon && <Icon size={16} className="absolute top-1/2 -translate-y-1/2 left-4 text-text-secondary pointer-events-none" />}
-        <input
-          id={id}
-          type={type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          className={`input-base ${Icon ? 'pl-10' : ''} ${ferr ? 'border-red-400/50 focus:border-red-400' : ''}`}
-        />
-        {children}
-      </div>
-      {ferr && <p className="text-red-400 text-xs mt-1.5 font-medium">{ferr}</p>}
-    </div>
-  );
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 py-12">
