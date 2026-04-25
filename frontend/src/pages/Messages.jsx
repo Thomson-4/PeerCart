@@ -97,19 +97,22 @@ function ChatView({ convId, userId, onBack }) {
   const [loading,   setLoading]  = useState(true);
   const [sending,   setSending]  = useState(false);
   const [input,     setInput]    = useState('');
-  const bottomRef    = useRef(null);
-  const scrollRef    = useRef(null);
-  const pollRef      = useRef(null);
-  const lastCountRef = useRef(0);
+  const bottomRef      = useRef(null);
+  const scrollRef      = useRef(null);
+  const pollRef        = useRef(null);
+  const lastCountRef   = useRef(0);
+  const userScrolledUp = useRef(false);   // true when user has scrolled away from bottom
 
-  // Only scroll if user is already near the bottom (within 120px)
-  const scrollToBottomIfNear = useCallback((force = false) => {
+  // Track whether user has scrolled up manually
+  const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (force || distanceFromBottom < 120) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    userScrolledUp.current = distanceFromBottom > 80;
+  }, []);
+
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    bottomRef.current?.scrollIntoView({ behavior });
   }, []);
 
   const loadMessages = useCallback(async () => {
@@ -119,27 +122,31 @@ function ChatView({ convId, userId, onBack }) {
       const isNew = msgs.length > lastCountRef.current;
       lastCountRef.current = msgs.length;
       setMessages(msgs);
-      if (isNew) scrollToBottomIfNear();
+      // Only auto-scroll on new messages when user hasn't scrolled up
+      if (isNew && !userScrolledUp.current) {
+        setTimeout(() => scrollToBottom('smooth'), 30);
+      }
     } catch (_) {}
-  }, [convId, scrollToBottomIfNear]);
+  }, [convId, scrollToBottom]);
 
   useEffect(() => {
     setLoading(true);
     lastCountRef.current = 0;
+    userScrolledUp.current = false;
     chatApi.getMessages(convId)
       .then((data) => {
         const msgs = data.messages || [];
         lastCountRef.current = msgs.length;
         setMessages(msgs);
-        // Force scroll to bottom on first load
-        setTimeout(() => scrollToBottomIfNear(true), 50);
+        // Force scroll to bottom on first load (instant so there's no flash)
+        setTimeout(() => scrollToBottom('instant'), 50);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
 
     pollRef.current = setInterval(loadMessages, 3000);
     return () => clearInterval(pollRef.current);
-  }, [convId, loadMessages, scrollToBottomIfNear]);
+  }, [convId, loadMessages, scrollToBottom]);
 
   const sendMsg = async (e) => {
     e.preventDefault();
@@ -153,8 +160,9 @@ function ChatView({ convId, userId, onBack }) {
         lastCountRef.current = prev.length + 1;
         return [...prev, data.message];
       });
-      // Always scroll after you send your own message
-      setTimeout(() => scrollToBottomIfNear(true), 50);
+      // Always scroll after sending your own message; reset the "scrolled up" flag
+      userScrolledUp.current = false;
+      setTimeout(() => scrollToBottom('smooth'), 50);
     } catch (_) {
       setInput(text); // restore on failure
     } finally {
@@ -223,7 +231,7 @@ function ChatView({ convId, userId, onBack }) {
       )}
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-1 pr-1">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto space-y-1 pr-1">
         {loading && (
           <div className="flex items-center justify-center h-full">
             <Loader size={24} className="animate-spin text-accent" />
