@@ -13,7 +13,7 @@ const sendViaResend = async (to, subject, html) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'PeerCart <noreply@peer-cart-brown.vercel.app>',
+      from: 'PeerCart <onboarding@resend.dev>',
       to,
       subject,
       html,
