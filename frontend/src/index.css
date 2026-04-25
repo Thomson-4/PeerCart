@@ -172,3 +172,17 @@
     transform: translateY(-6px);
   }
 }
+
+@keyframes demoProgressBar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.demo-progress-bar {
+  transform-origin: left;
+  animation: demoProgressBar 10s linear forwards;
+}

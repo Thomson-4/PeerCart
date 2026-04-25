@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { ShoppingCart, Search, Moon, Sun, User } from 'lucide-react';
 import logo from '../assets/Gemini_Generated_Image_5tzb215tzb215tzb.png';
+import whiteLogo from '../assets/white logo.jpg';
 
 export default function Header({ theme, toggleTheme }) {
   const navItems = [
@@ -24,7 +25,7 @@ export default function Header({ theme, toggleTheme }) {
           {/* Logo/Brand */}
           <NavLink to="/feed" className="flex items-center gap-3 shrink-0">
             <img
-              src={logo}
+              src={theme === 'dark' ? whiteLogo : logo}
               alt="PeerCart"
               className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm transition-transform hover:scale-[1.02]"
             />

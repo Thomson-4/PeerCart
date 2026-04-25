@@ -1,0 +1,16 @@
+export const C = {
+  bg:         "#0a0a0a",
+  surface:    "#111118",
+  surfaceAlt: "#1a1a2e",
+  border:     "rgba(255,255,255,0.08)",
+  accent:     "#7c3aed",
+  accent2:    "#4f46e5",
+  lime:       "#a3e635",
+  text:       "#f0f0f0",
+  textSec:    "#a0a0a0",
+  white:      "#ffffff",
+  green:      "#22c55e",
+  amber:      "#f59e0b",
+  gradientBg: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
+  gradientText: "linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #34d399 100%)",
+};

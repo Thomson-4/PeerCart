@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Send, Filter, Search } from 'lucide-react';
 import NeedCard from '../components/NeedCard';
+import { NeedFeedSkeleton } from '../components/Skeleton';
 
 const initialNeeds = [
   {
@@ -39,6 +40,12 @@ export default function NeedBoard() {
   const [needs, setNeeds] = useState(initialNeeds);
   const [query, setQuery] = useState('');
   const [urgencyFilter, setUrgencyFilter] = useState('All');
+  const [isFeedLoading, setIsFeedLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsFeedLoading(false), 950);
+    return () => clearTimeout(t);
+  }, []);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -195,17 +202,23 @@ export default function NeedBoard() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6">
-          {filteredNeeds.map((need) => (
-            <NeedCard
-              key={need.id}
-              {...need}
-              onHaveThis={() => window.alert(`Start chat with ${need.user.name}`)}
-            />
-          ))}
-          {filteredNeeds.length === 0 && (
-            <div className="bento-panel p-6 text-center text-text-secondary md:col-span-2 xl:col-span-2">
-              No matching needs right now. Try another filter.
-            </div>
+          {isFeedLoading ? (
+            <NeedFeedSkeleton count={4} />
+          ) : (
+            <>
+              {filteredNeeds.map((need) => (
+                <NeedCard
+                  key={need.id}
+                  {...need}
+                  onHaveThis={() => window.alert(`Start chat with ${need.user.name}`)}
+                />
+              ))}
+              {filteredNeeds.length === 0 && (
+                <div className="bento-panel p-6 text-center text-text-secondary md:col-span-2 xl:col-span-2">
+                  No matching needs right now. Try another filter.
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

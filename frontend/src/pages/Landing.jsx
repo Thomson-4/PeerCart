@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Zap, Users, Sparkles, MessageCircle, Star, PackageCheck, GraduationCap } from 'lucide-react';
+import AnimatedNumber from '../components/AnimatedNumber';
 
 export default function Landing() {
   const categories = [
@@ -48,12 +49,16 @@ export default function Landing() {
           <div className="grid grid-cols-2 gap-4">
             <div className="bento-panel p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-secondary">Trust Score</p>
-              <p className="mt-3 text-3xl font-black">97.4</p>
+              <p className="mt-3 text-3xl font-black tabular-nums">
+                <AnimatedNumber end={97.4} duration={1800} decimals={1} />
+              </p>
               <p className="mt-2 text-sm text-text-secondary">Profile-verified users only</p>
             </div>
             <div className="bento-panel p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-secondary">Active listings</p>
-              <p className="mt-3 text-3xl font-black">2.1K+</p>
+              <p className="mt-3 text-3xl font-black tabular-nums">
+                <AnimatedNumber end={2.1} duration={2000} decimals={1} suffix="K+" />
+              </p>
               <p className="mt-2 text-sm text-text-secondary">Live around your city</p>
             </div>
             <div className="bento-panel p-4 col-span-2">
@@ -131,18 +136,27 @@ export default function Landing() {
         <div className="grid gap-7 md:grid-cols-[1.2fr_1fr] md:items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-text-secondary">Social Proof</p>
-            <h2 className="mt-3 text-3xl md:text-4xl font-black tracking-tight">10,000+ peer-to-peer trades completed.</h2>
+            <h2 className="mt-3 text-3xl md:text-4xl font-black tracking-tight">
+              <span className="tabular-nums text-accent">
+                <AnimatedNumber end={10000} duration={2200} suffix="+" />
+              </span>{' '}
+              peer-to-peer trades completed.
+            </h2>
             <p className="mt-3 text-text-secondary">PeerCart users rely on trust scores and reviews before every meetup.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="bento-panel p-4">
               <Star size={16} className="text-secondary-accent" />
-              <p className="mt-2 text-2xl font-black">4.9/5</p>
+              <p className="mt-2 text-2xl font-black tabular-nums">
+                <AnimatedNumber end={4.9} duration={1600} decimals={1} suffix="/5" />
+              </p>
               <p className="text-xs text-text-secondary">Avg rating</p>
             </div>
             <div className="bento-panel p-4">
               <PackageCheck size={16} className="text-accent" />
-              <p className="mt-2 text-2xl font-black">2K+</p>
+              <p className="mt-2 text-2xl font-black tabular-nums">
+                <AnimatedNumber end={2} duration={1700} suffix="K+" />
+              </p>
               <p className="text-xs text-text-secondary">Active listings</p>
             </div>
           </div>

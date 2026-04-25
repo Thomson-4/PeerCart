@@ -1,4 +1,5 @@
 import { Settings, CheckCircle2, Star, ShieldCheck, MapPin } from 'lucide-react';
+import AnimatedNumber from '../components/AnimatedNumber';
 
 export default function Profile() {
   return (
@@ -48,8 +49,9 @@ export default function Profile() {
         <div className="bg-surface-elevated rounded-2xl p-6 border border-border-color shadow-sm flex items-center justify-between">
           <div>
             <h3 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Trust Score</h3>
-            <div className="text-3xl font-extrabold text-accent flex items-end gap-2">
-              98 <span className="text-sm pb-1 text-text-primary">/ 100</span>
+            <div className="text-3xl font-extrabold text-accent flex items-end gap-2 tabular-nums">
+              <AnimatedNumber end={98} duration={1800} />{' '}
+              <span className="text-sm pb-1 text-text-primary">/ 100</span>
             </div>
           </div>
           <ShieldCheck size={48} className="text-accent/20" />

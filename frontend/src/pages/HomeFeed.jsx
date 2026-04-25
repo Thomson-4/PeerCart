@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, ChevronRight, Sparkles, Book, Laptop, Shirt, PackageSearch } from 'lucide-react';
 import ItemCard from '../components/ItemCard';
+import AnimatedNumber from '../components/AnimatedNumber';
+import { FeedGridSkeleton } from '../components/Skeleton';
 
 const dummyData = [
-  { id: 1, title: 'Sony WH-1000XM4 Noise Cancelling', price: '9,500', type: 'Buy', category: 'Electronics', distance: '0.8 km', image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&q=80&w=400', isLiked: false },
-  { id: 2, title: 'Engg. Mathematics - BS Grewal', price: '150/week', type: 'Rent', category: 'Books', distance: 'City Center', image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=400', isLiked: true },
-  { id: 3, title: 'MacBook Pro M1 16GB RAM', price: '72,000', type: 'Buy', category: 'Electronics', distance: 'Main Gate', image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400', isLiked: false },
-  { id: 4, title: 'Study Table with Lamp', price: '850', type: 'Sell', category: 'Home Essentials', distance: 'Downtown', image: 'https://images.unsplash.com/photo-1595514535215-8f0c0533f7f5?auto=format&fit=crop&q=80&w=400', isLiked: false },
-  { id: 5, title: 'Single Door Mini Fridge', price: '4,500', type: 'Buy', category: 'Home Essentials', distance: 'North Side', image: 'https://images.unsplash.com/photo-1582046892554-729abdb26f00?auto=format&fit=crop&q=80&w=400', isLiked: true },
-  { id: 6, title: 'Acoustic Guitar with Stand', price: '250/day', type: 'Rent', category: 'Electronics', distance: 'Library Circle', image: 'https://images.unsplash.com/photo-1514649923863-ceaf75b770ab?auto=format&fit=crop&q=80&w=400', isLiked: false },
-  { id: 7, title: 'Data Structures Textbook Set', price: '2,200', type: 'Sell', category: 'Books', distance: 'Block L', image: 'https://images.unsplash.com/photo-1521056787327-8f4be84be4b5?auto=format&fit=crop&q=80&w=400', isLiked: false },
-  { id: 8, title: 'Btwin Rockrider Cycle', price: '5,500', type: 'Sell', category: 'Home Essentials', distance: 'Riverside', image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400', isLiked: true },
+  { id: 1, title: 'Study Table with Lamp', price: '850', type: 'Sell', category: 'Home Essentials', distance: 'Downtown', image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&q=80&w=400', isLiked: false },
+  { id: 2, title: 'Data Structures Textbook Set', price: '2,200', type: 'Sell', category: 'Books', distance: 'Block L', image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=400', isLiked: false },
+  { id: 3, title: 'Btwin Rockrider Cycle', price: '5,500', type: 'Sell', category: 'Home Essentials', distance: 'Riverside', image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400', isLiked: true },
+  { id: 4, title: 'Programming Textbook - Clean Code', price: '450', type: 'Sell', category: 'Books', distance: 'Campus Center', image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=400', isLiked: false },
+  { id: 5, title: 'Scientific Calculator - Casio FX-991EX', price: '1,200', type: 'Buy', category: 'Electronics', distance: 'Science Block', image: '/src/assets/Calculator.jpg', isLiked: true },
+  { id: 6, title: 'Bajaj Immersion 1500 Watts Water Heater Rod', price: '350', type: 'Sell', category: 'Home Essentials', distance: 'South Campus', image: '/src/assets/water heater.webp', isLiked: false },
 ];
 
 const categories = [
@@ -21,12 +21,18 @@ const categories = [
 ];
 
 export default function HomeFeed() {
-  const [activeMode, setActiveMode] = useState('Buy');
+  const [activeMode, setActiveMode] = useState('All');
   const [activeCategory, setActiveCategory] = useState('All');
   const [query, setQuery] = useState('');
+  const [isFeedLoading, setIsFeedLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsFeedLoading(false), 1100);
+    return () => clearTimeout(t);
+  }, []);
 
   const filteredItems = dummyData.filter((item) => {
-    const modeMatch = item.type === activeMode;
+    const modeMatch = activeMode === 'All' || item.type === activeMode;
     const categoryMatch = activeCategory === 'All' || item.category === activeCategory;
     const queryMatch = query.trim().length === 0 || item.title.toLowerCase().includes(query.toLowerCase());
     return modeMatch && categoryMatch && queryMatch;
@@ -51,7 +57,9 @@ export default function HomeFeed() {
             <p className="mt-2 text-sm text-text-secondary">Only verified users can access live listings and chats.</p>
             <div className="mt-3 flex items-center justify-between">
               <span className="text-sm font-semibold">Avg Trust Score</span>
-              <span className="trust-badge">96.1</span>
+              <span className="trust-badge tabular-nums">
+                <AnimatedNumber end={96.1} duration={1600} decimals={1} />
+              </span>
             </div>
           </div>
         </div>
@@ -68,7 +76,7 @@ export default function HomeFeed() {
           />
         </div>
         <div className="flex rounded-xl border border-border-color bg-surface/80 p-1">
-          {['Buy', 'Sell', 'Rent'].map((tab) => (
+          {['All', 'Buy', 'Sell', 'Rent'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveMode(tab)}
@@ -114,14 +122,16 @@ export default function HomeFeed() {
           </button>
         </div>
 
-        {filteredItems.length === 0 ? (
+        {isFeedLoading ? (
+          <FeedGridSkeleton count={8} />
+        ) : filteredItems.length === 0 ? (
           <div className="bento-panel flex min-h-[180px] flex-col items-center justify-center gap-2 p-6 text-center">
             <PackageSearch size={28} className="text-text-secondary" />
             <p className="font-semibold">No items found for this filter set.</p>
             <p className="text-sm text-text-secondary">Try switching category or searching with fewer keywords.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 animate-in fade-in duration-500 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
             {filteredItems.map((item) => (
               <ItemCard key={item.id} {...item} />
             ))}
