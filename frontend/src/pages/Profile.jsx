@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   CheckCircle2, Star, ShieldCheck,
   Loader, LogOut, ChevronRight, Lock, Package, ShoppingBag,
+  Pencil, Trash2, CheckSquare,
 } from 'lucide-react';
 import { auth as authApi, listings as listingsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -247,6 +248,135 @@ const STATUS_STYLES = {
   expired: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/30',
 };
 
+function ListingCard({ item, onDeleted, onStatusChanged }) {
+  const navigate = useNavigate();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmSold,   setConfirmSold]   = useState(false);
+  const [busy,          setBusy]          = useState(false);
+
+  const handleDelete = async () => {
+    setBusy(true);
+    try {
+      await listingsApi.remove(item._id);
+      onDeleted(item._id);
+    } catch (_) {}
+    finally { setBusy(false); setConfirmDelete(false); }
+  };
+
+  const handleMarkSold = async () => {
+    setBusy(true);
+    const newStatus = item.type === 'rent' ? 'rented' : 'sold';
+    try {
+      await listingsApi.update(item._id, { status: newStatus });
+      onStatusChanged(item._id, newStatus);
+    } catch (_) {}
+    finally { setBusy(false); setConfirmSold(false); }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 p-3 rounded-xl border border-border-color bg-surface/40">
+      {/* Main row */}
+      <div className="flex items-center gap-3">
+        {item.images?.[0] ? (
+          <img src={item.images[0]} alt={item.title}
+            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-surface-elevated" />
+        ) : (
+          <div className="w-14 h-14 rounded-xl bg-surface-elevated flex-shrink-0 flex items-center justify-center text-2xl">
+            📦
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm text-text-primary truncate">{item.title}</p>
+          <p className="text-xs text-text-secondary mt-0.5">
+            ₹{((item.price || 0) / 100).toLocaleString('en-IN')}
+            {item.type === 'rent' ? '/day' : ''} · {item.category}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border capitalize ${STATUS_STYLES[item.status] || STATUS_STYLES.active}`}>
+            {item.status}
+          </span>
+          <span className={`text-[10px] font-semibold uppercase ${item.type === 'rent' ? 'text-accent' : 'text-text-secondary'}`}>
+            {item.type}
+          </span>
+        </div>
+      </div>
+
+      {/* Action buttons row */}
+      <div className="flex items-center gap-2 pt-1 border-t border-border-color/50">
+
+        {/* Edit */}
+        <button
+          onClick={() => navigate(`/edit/${item._id}`)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-border-color rounded-lg text-text-secondary hover:border-accent/50 hover:text-accent transition-colors"
+        >
+          <Pencil size={12} /> Edit
+        </button>
+
+        {/* Mark as sold/rented — only for active listings */}
+        {item.status === 'active' && (
+          confirmSold ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-text-secondary">
+                Mark as {item.type === 'rent' ? 'rented' : 'sold'}?
+              </span>
+              <button
+                onClick={handleMarkSold}
+                disabled={busy}
+                className="px-2.5 py-1.5 text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+              >
+                {busy ? <Loader size={11} className="animate-spin" /> : 'Yes'}
+              </button>
+              <button
+                onClick={() => setConfirmSold(false)}
+                className="px-2.5 py-1.5 text-xs font-bold border border-border-color rounded-lg text-text-secondary hover:text-text-primary transition-colors"
+              >
+                No
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmSold(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-border-color rounded-lg text-text-secondary hover:border-emerald-500/50 hover:text-emerald-400 transition-colors"
+            >
+              <CheckSquare size={12} /> Mark {item.type === 'rent' ? 'Rented' : 'Sold'}
+            </button>
+          )
+        )}
+
+        {/* Delete */}
+        <div className="ml-auto">
+          {confirmDelete ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-text-secondary">Delete?</span>
+              <button
+                onClick={handleDelete}
+                disabled={busy}
+                className="px-2.5 py-1.5 text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50"
+              >
+                {busy ? <Loader size={11} className="animate-spin" /> : 'Yes, delete'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="px-2.5 py-1.5 text-xs font-bold border border-border-color rounded-lg text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-border-color rounded-lg text-text-secondary hover:border-red-400/50 hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MyListings() {
   const [items,   setItems]   = useState([]);
   const [loading, setLoading] = useState(true);
@@ -257,6 +387,10 @@ function MyListings() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const handleDeleted = (id) => setItems((prev) => prev.filter((i) => i._id !== id));
+  const handleStatusChanged = (id, status) =>
+    setItems((prev) => prev.map((i) => i._id === id ? { ...i, status } : i));
 
   if (loading) return (
     <div className="bento-panel p-6 flex items-center gap-3 text-text-secondary">
@@ -277,35 +411,19 @@ function MyListings() {
         <div className="text-center py-10 text-text-secondary">
           <Package size={36} className="mx-auto mb-3 opacity-30" />
           <p className="font-semibold">You haven't posted anything yet.</p>
-          <Link to="/add" className="mt-3 inline-block text-sm text-accent hover:underline">Post your first listing →</Link>
+          <Link to="/add" className="mt-3 inline-block text-sm text-accent hover:underline">
+            Post your first listing →
+          </Link>
         </div>
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <div key={item._id} className="flex items-center gap-4 p-3 rounded-xl border border-border-color bg-surface/40 hover:border-accent/30 transition-colors">
-              {item.images?.[0] ? (
-                <img src={item.images[0]} alt={item.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-surface-elevated" />
-              ) : (
-                <div className="w-14 h-14 rounded-xl bg-surface-elevated flex-shrink-0 flex items-center justify-center text-2xl">
-                  📦
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-text-primary truncate">{item.title}</p>
-                <p className="text-xs text-text-secondary mt-0.5">
-                  ₹{((item.price || 0) / 100).toLocaleString('en-IN')}
-                  {item.type === 'rent' ? '/day' : ''} · {item.category}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border capitalize ${STATUS_STYLES[item.status] || STATUS_STYLES.active}`}>
-                  {item.status}
-                </span>
-                <span className={`text-[10px] font-semibold uppercase ${item.type === 'rent' ? 'text-accent' : 'text-text-secondary'}`}>
-                  {item.type}
-                </span>
-              </div>
-            </div>
+            <ListingCard
+              key={item._id}
+              item={item}
+              onDeleted={handleDeleted}
+              onStatusChanged={handleStatusChanged}
+            />
           ))}
         </div>
       )}
