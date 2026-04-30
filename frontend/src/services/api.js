@@ -65,6 +65,11 @@ export const transactions = {
   myTransactions: (params = {})        => req(`/api/transactions/my${qs(params)}`),
 };
 
+export const reviews = {
+  create: (transactionId, rating, comment) =>
+    req('/api/reviews', { method: 'POST', body: JSON.stringify({ transactionId, rating, comment }) }),
+};
+
 export const chat = {
   getOrCreate:    (params)                   => req('/api/chat/conversations',          { method: 'POST', body: JSON.stringify(params) }),
   getConversations: ()                       => req('/api/chat/conversations'),
