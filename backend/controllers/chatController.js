@@ -36,7 +36,7 @@ const createOrGetConversation = async (req, res, next) => {
         listing: listingId,
         participants: { $all: [initiatorId, sellerId] },
       })
-        .populate('listing', 'title images price type status')
+        .populate('listing', 'title images price type status seller')
         .populate('participants', 'name avatar trustLevel');
 
       if (existing) return res.json({ success: true, conversation: existing });
@@ -45,7 +45,7 @@ const createOrGetConversation = async (req, res, next) => {
         listing: listingId,
         participants: [initiatorId, sellerId],
       });
-      await conversation.populate('listing', 'title images price type status');
+      await conversation.populate('listing', 'title images price type status seller');
       await conversation.populate('participants', 'name avatar trustLevel');
 
       return res.status(201).json({ success: true, conversation });
@@ -92,7 +92,7 @@ const createOrGetConversation = async (req, res, next) => {
 const getConversations = async (req, res, next) => {
   try {
     const conversations = await Conversation.find({ participants: req.user._id })
-      .populate('listing', 'title images price type status')
+      .populate('listing', 'title images price type status seller')
       .populate('need', 'title description maxBudget type')
       .populate('participants', 'name avatar trustLevel')
       .sort({ lastMessageAt: -1, createdAt: -1 });

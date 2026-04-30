@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  MessageCircle, ArrowLeft, Send, Loader, ShieldCheck,
-  Package, Clock, ChevronRight, Inbox,
+  MessageCircle, ArrowLeft, Send, Loader, Package,
+  ChevronRight, Inbox, IndianRupee, X, CheckCircle2,
+  CalendarDays, ShieldCheck, AlertCircle,
 } from 'lucide-react';
-import { chat as chatApi } from '../services/api';
+import { chat as chatApi, transactions } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&q=80&w=100';
@@ -20,6 +21,198 @@ function timeAgo(dateStr) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+/* ── Load Razorpay script ────────────────────────────────────────── */
+const loadRazorpay = () => new Promise((resolve) => {
+  if (window.Razorpay) { resolve(true); return; }
+  const s = document.createElement('script');
+  s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+  s.onload  = () => resolve(true);
+  s.onerror = () => resolve(false);
+  document.body.appendChild(s);
+});
+
+/* ── Offer / Payment Modal ───────────────────────────────────────── */
+function OfferModal({ listing, onClose, onSuccess }) {
+  const isRent = listing.type === 'rent';
+  const today  = new Date().toISOString().split('T')[0];
+
+  const [startDate, setStartDate] = useState('');
+  const [endDate,   setEndDate]   = useState('');
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState('');
+
+  const days = isRent && startDate && endDate
+    ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86_400_000))
+    : 0;
+
+  const handlePay = async () => {
+    setError('');
+    if (isRent) {
+      if (!startDate || !endDate) { setError('Please select rental start and end dates.'); return; }
+      if (endDate <= startDate)   { setError('End date must be after start date.'); return; }
+    }
+    setLoading(true);
+    try {
+      // 1. Create Razorpay order
+      const body = {
+        listingId: listing._id,
+        type: isRent ? 'rent' : 'buy',
+        ...(isRent && { rentalStartDate: startDate, rentalEndDate: endDate }),
+      };
+      const { payment } = await transactions.initiate(body);
+
+      // 2. Load checkout.js
+      const ok = await loadRazorpay();
+      if (!ok) { setError('Could not load Razorpay. Check your connection.'); setLoading(false); return; }
+
+      // 3. Open Razorpay checkout
+      const options = {
+        key:         payment.razorpayKeyId,
+        amount:      payment.amount,
+        currency:    payment.currency,
+        name:        'PeerCart',
+        description: listing.title,
+        order_id:    payment.orderId,
+        handler: async (resp) => {
+          try {
+            await transactions.verifyPayment({
+              razorpay_order_id:   resp.razorpay_order_id,
+              razorpay_payment_id: resp.razorpay_payment_id,
+              razorpay_signature:  resp.razorpay_signature,
+            });
+            onSuccess(payment.amount);
+          } catch (e) {
+            setError('Payment verification failed — please contact support.');
+            setLoading(false);
+          }
+        },
+        modal:  { ondismiss: () => setLoading(false) },
+        theme:  { color: '#7c3aed' },
+        prefill: {},
+      };
+      new window.Razorpay(options).open();
+    } catch (err) {
+      setError(err.message || 'Failed to initiate payment. Try again.');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-surface border border-border-color rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border-color">
+          <div>
+            <h2 className="font-black text-lg text-text-primary">Make an Offer</h2>
+            <p className="text-xs text-text-secondary mt-0.5">Secure payment via Razorpay escrow</p>
+          </div>
+          <button onClick={onClose} disabled={loading}
+            className="w-8 h-8 rounded-full bg-surface-elevated hover:bg-border-color flex items-center justify-center text-text-secondary transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Listing summary */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-elevated border border-border-color">
+            <img
+              src={listing.images?.[0] || FALLBACK_IMG}
+              alt={listing.title}
+              className="w-12 h-12 rounded-xl object-cover shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm text-text-primary truncate">{listing.title}</p>
+              <p className="text-xs text-text-secondary mt-0.5">
+                {isRent ? 'Rent' : 'Sale'} · {rupees(listing.price)}{isRent ? '/day' : ''}
+              </p>
+            </div>
+            <span className={`text-[10px] font-extrabold uppercase px-2 py-1 rounded-full shrink-0 ${
+              isRent ? 'bg-accent/15 text-accent' : 'bg-emerald-500/15 text-emerald-400'
+            }`}>
+              {isRent ? 'Rent' : 'Buy'}
+            </span>
+          </div>
+
+          {/* Rent date pickers */}
+          {isRent && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-text-secondary uppercase tracking-wider">
+                <CalendarDays size={13} /> Rental Period
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-text-secondary mb-1 block">Start date</label>
+                  <input
+                    type="date"
+                    min={today}
+                    value={startDate}
+                    onChange={(e) => { setStartDate(e.target.value); setError(''); }}
+                    className="input-base text-sm py-2"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-text-secondary mb-1 block">End date</label>
+                  <input
+                    type="date"
+                    min={startDate || today}
+                    value={endDate}
+                    onChange={(e) => { setEndDate(e.target.value); setError(''); }}
+                    className="input-base text-sm py-2"
+                  />
+                </div>
+              </div>
+              {days > 0 && (
+                <p className="text-xs text-accent font-semibold">
+                  {days} day{days > 1 ? 's' : ''} · Total {rupees(listing.price * days)}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Price summary */}
+          <div className="rounded-xl bg-accent/5 border border-accent/20 px-4 py-3 flex items-center justify-between">
+            <span className="text-sm font-bold text-text-primary">
+              {isRent ? (days > 0 ? `${days}-day rental` : 'Rental') : 'Purchase price'}
+            </span>
+            <span className="text-lg font-black text-accent flex items-center gap-1">
+              <IndianRupee size={16} />
+              {isRent
+                ? (days > 0 ? ((listing.price * days) / 100).toLocaleString('en-IN') : '—')
+                : (listing.price / 100).toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          {/* Escrow note */}
+          <div className="flex items-start gap-2 text-xs text-text-secondary">
+            <ShieldCheck size={14} className="text-accent shrink-0 mt-0.5" />
+            <span>Payment is held in escrow — released to the seller only after you confirm receipt.</span>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2.5">
+              <AlertCircle size={14} className="shrink-0" /> {error}
+            </div>
+          )}
+
+          {/* Pay button */}
+          <button
+            onClick={handlePay}
+            disabled={loading || (isRent && days === 0)}
+            className="w-full cta-gradient text-white font-extrabold py-3.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-accent/20"
+          >
+            {loading
+              ? <><Loader size={16} className="animate-spin" /> Processing…</>
+              : <><IndianRupee size={16} /> Pay {isRent && days > 0 ? rupees(listing.price * days) : rupees(listing.price)} with Razorpay</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ── Conversation list item ──────────────────────────────────────── */
@@ -92,23 +285,24 @@ function Bubble({ msg, isMine }) {
 
 /* ── Chat View ───────────────────────────────────────────────────── */
 function ChatView({ convId, userId, onBack }) {
-  const [conv,      setConv]     = useState(null);
-  const [messages,  setMessages] = useState([]);
-  const [loading,   setLoading]  = useState(true);
-  const [sending,   setSending]  = useState(false);
-  const [input,     setInput]    = useState('');
+  const [conv,         setConv]        = useState(null);
+  const [messages,     setMessages]    = useState([]);
+  const [loading,      setLoading]     = useState(true);
+  const [sending,      setSending]     = useState(false);
+  const [input,        setInput]       = useState('');
+  const [offerOpen,    setOfferOpen]   = useState(false);
+  const [paymentDone,  setPaymentDone] = useState(null); // amount in paise after success
+
   const bottomRef      = useRef(null);
   const scrollRef      = useRef(null);
   const pollRef        = useRef(null);
   const lastCountRef   = useRef(0);
-  const userScrolledUp = useRef(false);   // true when user has scrolled away from bottom
+  const userScrolledUp = useRef(false);
 
-  // Track whether user has scrolled up manually
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    userScrolledUp.current = distanceFromBottom > 80;
+    userScrolledUp.current = (el.scrollHeight - el.scrollTop - el.clientHeight) > 80;
   }, []);
 
   const scrollToBottom = useCallback((behavior = 'smooth') => {
@@ -122,10 +316,7 @@ function ChatView({ convId, userId, onBack }) {
       const isNew = msgs.length > lastCountRef.current;
       lastCountRef.current = msgs.length;
       setMessages(msgs);
-      // Only auto-scroll on new messages when user hasn't scrolled up
-      if (isNew && !userScrolledUp.current) {
-        setTimeout(() => scrollToBottom('smooth'), 30);
-      }
+      if (isNew && !userScrolledUp.current) setTimeout(() => scrollToBottom('smooth'), 30);
     } catch (_) {}
   }, [convId, scrollToBottom]);
 
@@ -138,7 +329,6 @@ function ChatView({ convId, userId, onBack }) {
         const msgs = data.messages || [];
         lastCountRef.current = msgs.length;
         setMessages(msgs);
-        // Force scroll to bottom on first load (instant so there's no flash)
         setTimeout(() => scrollToBottom('instant'), 50);
       })
       .catch(() => {})
@@ -160,17 +350,15 @@ function ChatView({ convId, userId, onBack }) {
         lastCountRef.current = prev.length + 1;
         return [...prev, data.message];
       });
-      // Always scroll after sending your own message; reset the "scrolled up" flag
       userScrolledUp.current = false;
       setTimeout(() => scrollToBottom('smooth'), 50);
     } catch (_) {
-      setInput(text); // restore on failure
+      setInput(text);
     } finally {
       setSending(false);
     }
   };
 
-  // Get listing info from first message sender context via conversations endpoint
   useEffect(() => {
     chatApi.getConversations()
       .then((data) => {
@@ -180,93 +368,147 @@ function ChatView({ convId, userId, onBack }) {
       .catch(() => {});
   }, [convId]);
 
-  const listing = conv?.listing || {};
-  const other   = (conv?.participants || []).find((p) => p._id !== userId) || {};
+  const listing  = conv?.listing || {};
+  const other    = (conv?.participants || []).find((p) => p._id !== userId) || {};
+
+  // seller id can be a string OR a populated object { _id, name }
+  const sellerId = listing.seller?._id ?? listing.seller;
+  const isBuyer  = !!listing._id && String(sellerId) !== String(userId);
+  const canOffer = isBuyer && listing.status === 'active' && !paymentDone;
+
+  const handlePaymentSuccess = (amountPaise) => {
+    setOfferOpen(false);
+    setPaymentDone(amountPaise);
+    // Send a system-style message in chat
+    chatApi.sendMessage(convId, `✅ Payment of ${rupees(amountPaise)} confirmed! Funds are held in escrow. I'll confirm receipt once I receive the item.`)
+      .then((d) => {
+        setMessages((prev) => {
+          lastCountRef.current = prev.length + 1;
+          return [...prev, d.message];
+        });
+        userScrolledUp.current = false;
+        setTimeout(() => scrollToBottom('smooth'), 50);
+      })
+      .catch(() => {});
+  };
 
   return (
-    <div className="flex flex-col h-full">
-
-      {/* Header */}
-      <div className="flex items-center gap-3 pb-4 border-b border-border-color mb-3 shrink-0">
-        <button onClick={onBack} className="text-text-secondary hover:text-text-primary transition-colors lg:hidden">
-          <ArrowLeft size={20} />
-        </button>
-        <img
-          src={listing.images?.[0] || FALLBACK_IMG}
-          alt={listing.title}
-          className="w-10 h-10 rounded-xl object-cover border border-border-color"
+    <>
+      {offerOpen && (
+        <OfferModal
+          listing={listing}
+          onClose={() => setOfferOpen(false)}
+          onSuccess={handlePaymentSuccess}
         />
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-text-primary truncate text-sm">{listing.title || 'Listing'}</p>
-          <p className="text-xs text-text-secondary">with {other.name || 'User'}</p>
-        </div>
-        {listing._id && (
-          <Link
-            to={`/listing/${listing._id}`}
-            className="text-xs font-bold text-accent hover:underline flex items-center gap-1 shrink-0"
-          >
-            <Package size={12} /> View listing
-          </Link>
-        )}
-      </div>
-
-      {/* Listing mini-card */}
-      {listing.title && (
-        <div className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-border-color px-3 py-2 mb-3 shrink-0">
-          <Package size={14} className="text-accent shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-text-primary truncate">{listing.title}</p>
-            <p className="text-xs text-text-secondary">
-              {listing.type === 'rent' ? 'Rent' : 'Sale'} · {listing.price ? rupees(listing.price) : ''}
-            </p>
-          </div>
-          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-            listing.status === 'active'
-              ? 'bg-emerald-500/15 text-emerald-400'
-              : 'bg-red-400/15 text-red-400'
-          }`}>
-            {listing.status || 'active'}
-          </span>
-        </div>
       )}
 
-      {/* Messages */}
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto space-y-1 pr-1">
-        {loading && (
-          <div className="flex items-center justify-center h-full">
-            <Loader size={24} className="animate-spin text-accent" />
-          </div>
-        )}
-        {!loading && messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
-            <MessageCircle size={32} className="text-text-secondary/40" />
-            <p className="text-sm text-text-secondary">No messages yet. Say hi!</p>
-          </div>
-        )}
-        {messages.map((msg) => (
-          <Bubble key={msg._id} msg={msg} isMine={msg.sender?._id === userId || msg.sender === userId} />
-        ))}
-        <div ref={bottomRef} />
-      </div>
+      <div className="flex flex-col h-full">
 
-      {/* Input */}
-      <form onSubmit={sendMsg} className="flex gap-2 mt-3 shrink-0">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message…"
-          className="input-base flex-1 rounded-xl py-2.5 text-sm"
-          maxLength={1000}
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || sending}
-          className="px-4 py-2.5 cta-gradient text-white rounded-xl font-bold transition-opacity disabled:opacity-40 flex items-center gap-1.5"
-        >
-          {sending ? <Loader size={15} className="animate-spin" /> : <Send size={15} />}
-        </button>
-      </form>
-    </div>
+        {/* Header */}
+        <div className="flex items-center gap-3 pb-4 border-b border-border-color mb-3 shrink-0">
+          <button onClick={onBack} className="text-text-secondary hover:text-text-primary transition-colors lg:hidden">
+            <ArrowLeft size={20} />
+          </button>
+          <img
+            src={listing.images?.[0] || FALLBACK_IMG}
+            alt={listing.title}
+            className="w-10 h-10 rounded-xl object-cover border border-border-color"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-text-primary truncate text-sm">{listing.title || 'Listing'}</p>
+            <p className="text-xs text-text-secondary">with {other.name || 'User'}</p>
+          </div>
+          <div className="shrink-0 flex items-center gap-2">
+            {canOffer && (
+              <button
+                onClick={() => setOfferOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 cta-gradient text-white text-xs font-extrabold rounded-xl shadow-sm shadow-accent/20 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+              >
+                <IndianRupee size={12} /> Make Offer
+              </button>
+            )}
+            {listing._id && (
+              <Link
+                to={`/listing/${listing._id}`}
+                className="text-xs font-bold text-accent hover:underline flex items-center gap-1"
+              >
+                <Package size={12} /> View
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Payment success banner */}
+        {paymentDone && (
+          <div className="flex items-center gap-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 mb-3 shrink-0">
+            <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-emerald-400">Payment successful!</p>
+              <p className="text-xs text-text-secondary mt-0.5">
+                {rupees(paymentDone)} is in escrow. Go to <strong>My Orders</strong> to confirm receipt once you receive the item.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Listing mini-card */}
+        {listing.title && (
+          <div className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-border-color px-3 py-2 mb-3 shrink-0">
+            <Package size={14} className="text-accent shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-text-primary truncate">{listing.title}</p>
+              <p className="text-xs text-text-secondary">
+                {listing.type === 'rent' ? 'Rent' : 'Sale'} · {listing.price ? rupees(listing.price) : ''}
+              </p>
+            </div>
+            <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+              listing.status === 'active'
+                ? 'bg-emerald-500/15 text-emerald-400'
+                : 'bg-red-400/15 text-red-400'
+            }`}>
+              {listing.status || 'active'}
+            </span>
+          </div>
+        )}
+
+        {/* Messages */}
+        <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto space-y-1 pr-1">
+          {loading && (
+            <div className="flex items-center justify-center h-full">
+              <Loader size={24} className="animate-spin text-accent" />
+            </div>
+          )}
+          {!loading && messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
+              <MessageCircle size={32} className="text-text-secondary/40" />
+              <p className="text-sm text-text-secondary">No messages yet. Say hi!</p>
+            </div>
+          )}
+          {messages.map((msg) => (
+            <Bubble key={msg._id} msg={msg} isMine={msg.sender?._id === userId || msg.sender === userId} />
+          ))}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <form onSubmit={sendMsg} className="flex gap-2 mt-3 shrink-0">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type a message…"
+            className="input-base flex-1 rounded-xl py-2.5 text-sm"
+            maxLength={1000}
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || sending}
+            className="px-4 py-2.5 cta-gradient text-white rounded-xl font-bold transition-opacity disabled:opacity-40 flex items-center gap-1.5"
+          >
+            {sending ? <Loader size={15} className="animate-spin" /> : <Send size={15} />}
+          </button>
+        </form>
+      </div>
+    </>
   );
 }
 
@@ -280,9 +522,7 @@ export default function Messages() {
   const [loading,       setLoading]       = useState(true);
   const [activeConv,    setActiveConv]    = useState(convId || null);
 
-  // Attach user id to each conversation for "other participant" lookup
-  const enrichConvs = (convs) =>
-    convs.map((c) => ({ ...c, _myId: user?.id }));
+  const enrichConvs = (convs) => convs.map((c) => ({ ...c, _myId: user?.id }));
 
   useEffect(() => {
     setLoading(true);
@@ -292,7 +532,6 @@ export default function Messages() {
       .finally(() => setLoading(false));
   }, [user?.id]);
 
-  // When URL param changes (e.g. navigated from listing), update activeConv
   useEffect(() => {
     if (convId) setActiveConv(convId);
   }, [convId]);
