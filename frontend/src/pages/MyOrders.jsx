@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   ShoppingBag, Loader, Package, CheckCircle2, Clock,
   AlertTriangle, XCircle, ChevronRight, RefreshCw,
-  ShieldCheck, MessageCircle,
+  ShieldCheck, MessageCircle, Star, X,
 } from 'lucide-react';
-import { transactions as txApi } from '../services/api';
+import { transactions as txApi, reviews as reviewsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const rupees = (p) => p != null ? `₹${(p / 100).toLocaleString('en-IN')}` : '—';
@@ -90,10 +90,156 @@ function DisputeModal({ txId, onClose, onDone }) {
   );
 }
 
+/* ── Star picker ─────────────────────────────────────────────────── */
+function StarPicker({ value, onChange }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n)}
+          onMouseEnter={() => setHovered(n)}
+          onMouseLeave={() => setHovered(0)}
+          className="transition-transform hover:scale-110 active:scale-95"
+        >
+          <Star
+            size={32}
+            className={`transition-colors ${
+              n <= (hovered || value) ? 'text-yellow-400' : 'text-border-color'
+            }`}
+            fill={n <= (hovered || value) ? 'currentColor' : 'none'}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const STAR_LABELS = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'];
+
+/* ── Review modal ────────────────────────────────────────────────── */
+function ReviewModal({ tx, userId, onClose, onDone }) {
+  const isBuyer   = tx.buyer?._id === userId || tx.buyer === userId;
+  const reviewee  = isBuyer ? tx.seller : tx.buyer;
+  const [rating,  setRating]  = useState(0);
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!rating) { setError('Please select a star rating.'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      await reviewsApi.create(tx._id, rating, comment.trim() || undefined);
+      onDone();
+    } catch (err) {
+      // 409 = already reviewed — treat as success
+      if (err.status === 409) { onDone(); return; }
+      setError(err.message || 'Could not submit review. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-surface border border-border-color rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border-color">
+          <div>
+            <h2 className="font-black text-lg text-text-primary flex items-center gap-2">
+              <Star size={18} className="text-yellow-400" fill="currentColor" /> Rate your experience
+            </h2>
+            <p className="text-xs text-text-secondary mt-0.5">
+              How was your deal with <strong className="text-text-primary">{reviewee?.name || 'User'}</strong>?
+            </p>
+          </div>
+          <button onClick={onClose} disabled={loading}
+            className="w-8 h-8 rounded-full bg-surface-elevated hover:bg-border-color flex items-center justify-center text-text-secondary transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="p-5 space-y-5">
+          {/* Listing context */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-elevated border border-border-color">
+            {tx.listing?.images?.[0] ? (
+              <img src={tx.listing.images[0]} alt={tx.listing.title}
+                className="w-10 h-10 rounded-xl object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center shrink-0">
+                <Package size={16} className="text-text-secondary/40" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-text-primary truncate">{tx.listing?.title || 'Listing'}</p>
+              <p className="text-xs text-text-secondary">{isBuyer ? 'You bought this' : 'You sold this'}</p>
+            </div>
+          </div>
+
+          {/* Stars */}
+          <div className="space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">Your rating</p>
+            <div className="flex flex-col items-center gap-2 py-2">
+              <StarPicker value={rating} onChange={(n) => { setRating(n); setError(''); }} />
+              {rating > 0 && (
+                <p className={`text-sm font-bold ${rating >= 4 ? 'text-yellow-400' : rating >= 3 ? 'text-text-primary' : 'text-red-400'}`}>
+                  {STAR_LABELS[rating]}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wide text-text-secondary block">
+              Comment <span className="font-normal normal-case tracking-normal">(optional)</span>
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Describe your experience…"
+              rows={3}
+              maxLength={300}
+              className="input-base resize-none text-sm"
+            />
+            <p className="text-[10px] text-text-secondary text-right">{comment.length}/300</p>
+          </div>
+
+          {error && (
+            <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2">
+              {error}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <button type="button" onClick={onClose} disabled={loading}
+              className="flex-1 py-3 border border-border-color rounded-xl text-sm font-bold text-text-secondary hover:border-accent/30 transition-colors">
+              Skip
+            </button>
+            <button type="submit" disabled={loading || !rating}
+              className="flex-1 py-3 cta-gradient text-white rounded-xl text-sm font-extrabold disabled:opacity-50 transition-all hover:-translate-y-0.5 active:translate-y-0 shadow-sm shadow-accent/20 flex items-center justify-center gap-2">
+              {loading
+                ? <Loader size={15} className="animate-spin" />
+                : <><Star size={14} fill="currentColor" /> Submit Review</>}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 /* ── Transaction card ────────────────────────────────────────────── */
-function TxCard({ tx, userId, onRefresh }) {
-  const [confirming, setConfirming] = useState(false);
+function TxCard({ tx, userId, onRefresh, reviewed, onReviewed }) {
+  const [confirming,  setConfirming]  = useState(false);
   const [disputeOpen, setDisputeOpen] = useState(false);
+  const [reviewOpen,  setReviewOpen]  = useState(false);
   const [actionError, setActionError] = useState('');
 
   const isBuyer  = tx.buyer?._id === userId || tx.buyer === userId;
@@ -124,6 +270,14 @@ function TxCard({ tx, userId, onRefresh }) {
           txId={tx._id}
           onClose={() => setDisputeOpen(false)}
           onDone={() => { setDisputeOpen(false); onRefresh(); }}
+        />
+      )}
+      {reviewOpen && (
+        <ReviewModal
+          tx={tx}
+          userId={userId}
+          onClose={() => setReviewOpen(false)}
+          onDone={() => { setReviewOpen(false); onReviewed(tx._id); }}
         />
       )}
 
@@ -201,9 +355,23 @@ function TxCard({ tx, userId, onRefresh }) {
         )}
 
         {tx.status === 'completed' && (
-          <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-lg px-3 py-2.5">
-            <CheckCircle2 size={14} className="shrink-0" />
-            {isBuyer ? 'Payment released to seller. Deal done!' : 'Funds received. Deal done!'}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-lg px-3 py-2.5">
+              <CheckCircle2 size={14} className="shrink-0" />
+              {isBuyer ? 'Payment released to seller. Deal done!' : 'Funds received. Deal done!'}
+            </div>
+            {reviewed ? (
+              <div className="flex items-center gap-2 text-xs text-yellow-400">
+                <Star size={13} fill="currentColor" /> Review submitted — thank you!
+              </div>
+            ) : (
+              <button
+                onClick={() => setReviewOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
+              >
+                <Star size={13} /> Leave a review for {(isBuyer ? tx.seller : tx.buyer)?.name || 'User'}
+              </button>
+            )}
           </div>
         )}
 
@@ -240,6 +408,7 @@ export default function MyOrders() {
   const [loading,      setLoading]      = useState(true);
   const [filter,       setFilter]       = useState('all'); // all | buying | selling
   const [error,        setError]        = useState('');
+  const [reviewedIds,  setReviewedIds]  = useState(new Set());
 
   const load = useCallback(async () => {
     setError('');
@@ -362,6 +531,8 @@ export default function MyOrders() {
               key={tx._id}
               tx={tx}
               userId={user?.id}
+              reviewed={reviewedIds.has(tx._id)}
+              onReviewed={(id) => setReviewedIds((prev) => new Set([...prev, id]))}
               onRefresh={() => { setLoading(true); load(); }}
             />
           ))}
