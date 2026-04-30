@@ -13,6 +13,7 @@ import MobileUpload from './pages/MobileUpload';
 import ListingDetail from './pages/ListingDetail';
 import Messages from './pages/Messages';
 import MyOrders from './pages/MyOrders';
+import EditListing from './pages/EditListing';
 import useTheme from './hooks/useTheme';
 
 function ProtectedRoute({ children }) {
@@ -41,6 +42,7 @@ function AppRoutes() {
         <Route path="/messages"         element={<ProtectedRoute><Messages /></ProtectedRoute>} />
         <Route path="/messages/:convId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
         <Route path="/orders"           element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+        <Route path="/edit/:id"         element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
