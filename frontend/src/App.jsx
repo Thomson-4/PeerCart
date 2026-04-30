@@ -12,6 +12,7 @@ import ConfirmEmail from './pages/ConfirmEmail';
 import MobileUpload from './pages/MobileUpload';
 import ListingDetail from './pages/ListingDetail';
 import Messages from './pages/Messages';
+import MyOrders from './pages/MyOrders';
 import useTheme from './hooks/useTheme';
 
 function ProtectedRoute({ children }) {
@@ -37,8 +38,9 @@ function AppRoutes() {
         <Route path="/needs"          element={<ProtectedRoute><NeedBoard /></ProtectedRoute>} />
         <Route path="/add"            element={<ProtectedRoute><AddItem /></ProtectedRoute>} />
         <Route path="/profile"        element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/messages"       element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+        <Route path="/messages"         element={<ProtectedRoute><Messages /></ProtectedRoute>} />
         <Route path="/messages/:convId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+        <Route path="/orders"           element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

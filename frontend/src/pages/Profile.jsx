@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   CheckCircle2, Star, ShieldCheck,
-  Loader, LogOut, ChevronRight, Lock, Package,
+  Loader, LogOut, ChevronRight, Lock, Package, ShoppingBag,
 } from 'lucide-react';
 import { auth as authApi, listings as listingsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -423,6 +423,23 @@ export default function Profile() {
 
       {/* Trust Journey */}
       <TrustJourney user={user} />
+
+      {/* My Orders shortcut */}
+      <Link
+        to="/orders"
+        className="bento-panel p-5 flex items-center justify-between hover:border-accent/30 transition-colors group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+            <ShoppingBag size={18} className="text-accent" />
+          </div>
+          <div>
+            <p className="font-bold text-text-primary text-sm">My Orders</p>
+            <p className="text-xs text-text-secondary">View purchases, sales & escrow status</p>
+          </div>
+        </div>
+        <ChevronRight size={18} className="text-text-secondary group-hover:text-accent transition-colors" />
+      </Link>
 
       {/* My Listings */}
       <MyListings />
