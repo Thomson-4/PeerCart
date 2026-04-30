@@ -1,26 +1,40 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { PackageSearch, MessageCircle, PlusCircle, User } from 'lucide-react';
-import { chat as chatApi } from '../services/api';
+import { PackageSearch, MessageCircle, PlusCircle, User, ShoppingBag } from 'lucide-react';
+import { chat as chatApi, transactions as txApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 export default function BottomNav() {
-  const { isAuthenticated } = useAuth();
-  const [unread, setUnread] = useState(0);
+  const { isAuthenticated, user } = useAuth();
+  const [unread,       setUnread]       = useState(0);
+  const [ordersBadge,  setOrdersBadge]  = useState(0);
 
-  // Poll unread count every 15 seconds when authenticated
   useEffect(() => {
     if (!isAuthenticated) return;
-    const fetch = () => chatApi.unreadCount().then((d) => setUnread(d.unreadCount || 0)).catch(() => {});
-    fetch();
-    const id = setInterval(fetch, 15000);
+    const fetchCounts = async () => {
+      try {
+        const [msgData, txData] = await Promise.all([
+          chatApi.unreadCount(),
+          txApi.myTransactions(),
+        ]);
+        setUnread(msgData.unreadCount || 0);
+        // badge = escrowed orders where user is buyer (needs action)
+        const actionNeeded = (txData.transactions || []).filter(
+          (tx) => tx.status === 'escrowed' && (tx.buyer?._id === user?.id || tx.buyer === user?.id)
+        ).length;
+        setOrdersBadge(actionNeeded);
+      } catch (_) {}
+    };
+    fetchCounts();
+    const id = setInterval(fetchCounts, 30000);
     return () => clearInterval(id);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   const navItems = [
     { name: 'Feed',     path: '/feed',     icon: PackageSearch },
     { name: 'Messages', path: '/messages', icon: MessageCircle, badge: unread },
-    { name: 'Add',      path: '/add',      icon: PlusCircle,   isPrimary: true },
+    { name: 'Add',      path: '/add',      icon: PlusCircle,    isPrimary: true },
+    { name: 'Orders',   path: '/orders',   icon: ShoppingBag,   badge: ordersBadge },
     { name: 'Profile',  path: '/profile',  icon: User },
   ];
 
