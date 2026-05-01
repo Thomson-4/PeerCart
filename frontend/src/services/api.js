@@ -82,6 +82,12 @@ export const chat = {
   unreadCount:    ()                         => req('/api/chat/unread-count'),
 };
 
+export const notifications = {
+  getAll:      ()   => req('/api/notifications'),
+  markRead:    (id) => req(`/api/notifications/${id}/read`,  { method: 'PATCH' }),
+  markAllRead: ()   => req('/api/notifications/read-all',    { method: 'PATCH' }),
+};
+
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const upload = {

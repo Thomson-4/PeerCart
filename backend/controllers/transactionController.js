@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Ambassador = require('../models/Ambassador');
 const { checkTrustProgression } = require('../utils/trustProgression');
 const {
+  notifySellerOfTransaction,
   notifyBuyerEscrowConfirmed,
   notifySellerEscrowReleased,
   notifyDisputeRaised,
@@ -223,6 +224,14 @@ const initiate = async (req, res, next) => {
         rentalEndDate:   new Date(rentalEndDate),
       }),
     });
+
+    // Notify seller a purchase has been initiated (non-blocking)
+    notifySellerOfTransaction(
+      listing.seller,
+      req.user.name || 'A student',
+      listing.title,
+      transaction._id
+    );
 
     res.status(201).json({
       success: true,
