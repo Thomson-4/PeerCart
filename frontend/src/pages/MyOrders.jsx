@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import {
   ShoppingBag, Loader, Package, CheckCircle2, Clock,
   AlertTriangle, XCircle, ChevronRight, RefreshCw,
-  ShieldCheck, MessageCircle, Star, X,
+  ShieldCheck, MessageCircle, Star, X, Tag,
 } from 'lucide-react';
 import { transactions as txApi, reviews as reviewsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import EmptyState from '../components/EmptyState';
 
 const rupees = (p) => p != null ? `₹${(p / 100).toLocaleString('en-IN')}` : '—';
 
@@ -500,28 +501,32 @@ export default function MyOrders() {
       )}
 
       {error && (
-        <div className="flex items-center gap-3 bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-sm text-red-400">
-          <XCircle size={16} className="shrink-0" /> {error}
-        </div>
+        <EmptyState
+          error={error}
+          description="Could not load your orders. Check your connection."
+          onRetry={() => { setLoading(true); load(); }}
+        />
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-          <ShoppingBag size={48} className="text-text-secondary/20" />
-          <div>
-            <p className="font-bold text-text-primary">No {filter === 'all' ? '' : filter} orders yet</p>
-            <p className="text-sm text-text-secondary mt-1">
-              {filter === 'selling'
-                ? 'When someone buys your listing, it appears here.'
-                : 'Browse listings and make an offer to get started.'}
-            </p>
-          </div>
-          {filter !== 'selling' && (
-            <Link to="/feed" className="text-sm font-bold text-accent hover:underline flex items-center gap-1">
-              Browse listings <ChevronRight size={14} />
-            </Link>
-          )}
-        </div>
+        <EmptyState
+          icon={filter === 'selling' ? Tag : ShoppingBag}
+          title={
+            filter === 'buying'  ? "No purchases yet" :
+            filter === 'selling' ? "No sales yet" :
+                                   "No orders yet"
+          }
+          description={
+            filter === 'selling'
+              ? "When a buyer pays for your listing, it will appear here. Make sure your listings are active."
+              : "Find something you like, start a chat, and make an offer. Your purchases will appear here."
+          }
+          action={
+            filter !== 'selling'
+              ? { label: 'Browse listings', to: '/feed' }
+              : { label: 'View my listings', to: '/profile' }
+          }
+        />
       )}
 
       {!loading && !error && filtered.length > 0 && (
