@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { chat as chatApi, transactions } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import EmptyState from '../components/EmptyState';
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&q=80&w=100';
 
@@ -570,18 +571,13 @@ export default function Messages() {
               </div>
             )}
             {!loading && conversations.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-8">
-                <Inbox size={36} className="text-text-secondary/40" />
-                <div>
-                  <p className="font-bold text-text-primary">No conversations yet</p>
-                  <p className="text-sm text-text-secondary mt-1">
-                    Find something you like and tap <strong>"I want to buy this"</strong>.
-                  </p>
-                </div>
-                <Link to="/feed" className="text-sm font-bold text-accent hover:underline">
-                  Browse listings →
-                </Link>
-              </div>
+              <EmptyState
+                icon={Inbox}
+                title="No conversations yet"
+                description='Find a listing you like and tap "I want to buy this" to start chatting.'
+                action={{ label: 'Browse listings', to: '/feed' }}
+                className="border-0 shadow-none py-10"
+              />
             )}
             {conversations.map((conv) => (
               <ConvItem
