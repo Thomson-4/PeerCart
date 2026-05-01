@@ -194,7 +194,7 @@ const sendMessage = async (req, res, next) => {
       (p) => p.toString() !== req.user._id.toString()
     );
     if (recipientId) {
-      notifyNewMessage(recipientId, req.user.name || 'Someone', preview);
+      notifyNewMessage(recipientId, req.user.name || 'Someone', preview, conversation._id);
     }
 
     res.status(201).json({ success: true, message });

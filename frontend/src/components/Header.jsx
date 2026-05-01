@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShoppingBag, Moon, Sun, User, Menu, X, Sparkles } from 'lucide-react';
+import { Moon, Sun, User, Menu, X, Sparkles } from 'lucide-react';
 import logo from '../assets/Gemini_Generated_Image_5tzb215tzb215tzb.png';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const navItems = [
   { name: 'Home',       path: '/' },
@@ -15,7 +16,7 @@ const navItems = [
 export default function Header({ theme, toggleTheme }) {
   const [scrolled,    setScrolled]    = useState(false);
   const [mobileOpen,  setMobileOpen]  = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -87,13 +88,8 @@ export default function Header({ theme, toggleTheme }) {
                 : <Moon size={19} strokeWidth={2.5} />}
             </button>
 
-            {/* Cart icon */}
-            <button className="relative p-2.5 text-text-secondary hover:text-accent transition-colors rounded-xl hover:bg-surface-elevated hidden sm:flex">
-              <ShoppingBag size={19} strokeWidth={2.5} />
-              <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-secondary-accent text-background text-[9px] font-black flex items-center justify-center">
-                2
-              </span>
-            </button>
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* Profile / Sign in */}
             <NavLink
@@ -108,11 +104,11 @@ export default function Header({ theme, toggleTheme }) {
             >
               {isAuthenticated
                 ? (
-                  <img
-                    src="https://i.pravatar.cc/150?u=peercart"
-                    alt="Profile"
-                    className="w-8 h-8 rounded-full border-2 border-accent/40 object-cover hover:border-accent transition-colors"
-                  />
+                  user?.avatar
+                    ? <img src={user.avatar} alt={user?.name || 'Profile'} className="w-8 h-8 rounded-full border-2 border-accent/40 object-cover hover:border-accent transition-colors" />
+                    : <div className="w-8 h-8 rounded-full border-2 border-accent/40 bg-accent/20 flex items-center justify-center text-xs font-black text-accent">
+                        {(user?.name || user?.phone || '?').slice(0, 2).toUpperCase()}
+                      </div>
                 )
                 : (
                   <>
