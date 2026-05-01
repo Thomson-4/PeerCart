@@ -393,8 +393,18 @@ function MyListings() {
     setItems((prev) => prev.map((i) => i._id === id ? { ...i, status } : i));
 
   if (loading) return (
-    <div className="bento-panel p-6 flex items-center gap-3 text-text-secondary">
-      <Loader size={18} className="animate-spin" /> Loading your listings…
+    <div className="bento-panel p-6 md:p-7 space-y-3">
+      <div className="h-6 w-32 skeleton rounded-xl mb-2" />
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-border-color">
+          <div className="w-14 h-14 skeleton rounded-xl shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-1/2 skeleton rounded-lg" />
+            <div className="h-3 w-1/3 skeleton rounded-lg" />
+          </div>
+          <div className="h-6 w-16 skeleton rounded-full shrink-0" />
+        </div>
+      ))}
     </div>
   );
 
@@ -450,9 +460,49 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[300px] items-center justify-center gap-3">
-        <Loader size={24} className="animate-spin text-accent" />
-        <p className="text-text-secondary font-semibold">Loading profile…</p>
+      <div className="w-full pb-20 space-y-8 animate-in fade-in duration-300">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 py-8 border-b border-border-color">
+          <div className="w-28 h-28 skeleton rounded-full shrink-0" />
+          <div className="flex-1 space-y-3 text-center md:text-left">
+            <div className="h-8 w-48 skeleton rounded-xl mx-auto md:mx-0" />
+            <div className="h-5 w-32 skeleton rounded-full mx-auto md:mx-0" />
+            <div className="h-4 w-56 skeleton rounded-lg mx-auto md:mx-0" />
+          </div>
+        </div>
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bento-panel p-5 flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="h-3 w-20 skeleton rounded-full" />
+                <div className="h-9 w-16 skeleton rounded-xl" />
+              </div>
+              <div className="w-10 h-10 skeleton rounded-xl" />
+            </div>
+          ))}
+        </div>
+        {/* Trust journey */}
+        <div className="bento-panel p-6 space-y-4">
+          <div className="h-6 w-40 skeleton rounded-xl" />
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-16 w-full skeleton rounded-2xl" />
+          ))}
+        </div>
+        {/* Listings section */}
+        <div className="bento-panel p-6 space-y-4">
+          <div className="h-6 w-32 skeleton rounded-xl" />
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-border-color">
+              <div className="w-14 h-14 skeleton rounded-xl shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-1/2 skeleton rounded-lg" />
+                <div className="h-3 w-1/3 skeleton rounded-lg" />
+              </div>
+              <div className="h-6 w-16 skeleton rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
