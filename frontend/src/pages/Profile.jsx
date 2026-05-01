@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   CheckCircle2, Star, ShieldCheck,
   Loader, LogOut, ChevronRight, Lock, Package, ShoppingBag,
-  Pencil, Trash2, CheckSquare,
+  Pencil, Trash2, CheckSquare, Camera,
 } from 'lucide-react';
-import { auth as authApi, listings as listingsApi } from '../services/api';
+import { auth as authApi, listings as listingsApi, upload as uploadApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -512,9 +512,12 @@ function MyListings() {
 /* ─── Main Page ─────────────────────────────────────────────────── */
 export default function Profile() {
   const { user: ctxUser, logout, refreshUser } = useAuth();
-  const [user,    setUser]    = useState(ctxUser);
-  const [loading, setLoading] = useState(!ctxUser);
-  const [error,   setError]   = useState('');
+  const [user,            setUser]            = useState(ctxUser);
+  const [loading,         setLoading]         = useState(!ctxUser);
+  const [error,           setError]           = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError,     setAvatarError]     = useState('');
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -525,6 +528,28 @@ export default function Profile() {
   }, []);
 
   const handleLogout = () => { logout(); navigate('/login'); };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset so the same file can be re-selected if needed
+    e.target.value = '';
+
+    setAvatarError('');
+    setAvatarUploading(true);
+    try {
+      const uploadData = await uploadApi.uploadImage(file);
+      const url = uploadData.url || uploadData.secure_url;
+      if (!url) throw new Error('No URL returned from upload');
+      const data = await authApi.updateProfile({ avatar: url });
+      setUser(data.user);
+      await refreshUser();
+    } catch (err) {
+      setAvatarError(err.message || 'Upload failed');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -589,7 +614,16 @@ export default function Profile() {
 
       {/* Header */}
       <div className="flex flex-col md:flex-row items-center md:items-start gap-8 py-8 border-b border-border-color">
-        <div className="relative">
+        <div className="relative group/avatar">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+
           <div className="w-28 h-28 rounded-full border-4 border-surface p-1 shadow-lg bg-gradient-to-tr from-accent to-lime-green">
             {avatarUrl ? (
               <img src={avatarUrl} alt={user?.name || 'User'} className="w-full h-full object-cover rounded-full bg-surface" />
@@ -599,8 +633,26 @@ export default function Profile() {
               </div>
             )}
           </div>
+
+          {/* Camera overlay button */}
+          <button
+            type="button"
+            onClick={() => !avatarUploading && fileInputRef.current?.click()}
+            disabled={avatarUploading}
+            aria-label="Change profile photo"
+            className="absolute inset-0 rounded-full flex items-center justify-center
+              bg-black/0 group-hover/avatar:bg-black/40
+              opacity-0 group-hover/avatar:opacity-100
+              transition-all duration-200 cursor-pointer disabled:cursor-wait"
+          >
+            {avatarUploading
+              ? <Loader size={22} className="text-white animate-spin" />
+              : <Camera size={22} className="text-white drop-shadow" />}
+          </button>
+
+          {/* Email verified badge — keep below avatar */}
           {user?.emailVerified && (
-            <div className="absolute -bottom-2 right-1 bg-text-primary text-background flex items-center gap-1 px-2.5 py-1 rounded-full border-2 border-surface shadow-sm">
+            <div className="absolute -bottom-2 right-1 bg-text-primary text-background flex items-center gap-1 px-2.5 py-1 rounded-full border-2 border-surface shadow-sm pointer-events-none">
               <CheckCircle2 size={11} className="text-lime-green" />
               <span className="text-[10px] font-extrabold uppercase tracking-wide">Verified</span>
             </div>
@@ -624,6 +676,11 @@ export default function Profile() {
             </button>
           </div>
           <p className="text-sm text-text-secondary">{user?.email || 'No email verified yet'} · {user?.phone}</p>
+          {avatarError && (
+            <p className="text-xs text-red-400 mt-2 bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2">
+              ⚠ {avatarError}
+            </p>
+          )}
         </div>
       </div>
 

@@ -35,6 +35,9 @@ export const auth = {
   me:             ()             => req('/api/auth/me'),
   verifyEmail:    (email)        => req('/api/auth/verify-email',       { method: 'POST', body: JSON.stringify({ email }) }),
   confirmEmail:   (token)        => req(`/api/auth/confirm-email/${token}`),
+  // Profile update (name and/or avatar URL)
+  updateProfile: (data) =>
+    req('/api/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }),
   // Password-based auth
   signup: (name, email, phone, password, confirmPassword) =>
     req('/api/auth/signup', { method: 'POST', body: JSON.stringify({ name, email, phone, password, confirmPassword }) }),
