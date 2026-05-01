@@ -1,7 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
-const { sendOtp, verifyOtp, verifyEmail, confirmEmail, sendEmailOtp, verifyEmailOtp, signup, signin } = require('../controllers/authController');
+const { sendOtp, verifyOtp, verifyEmail, confirmEmail, sendEmailOtp, verifyEmailOtp, signup, signin, updateProfile } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
 // 5 OTP requests per phone per 15 minutes
@@ -48,6 +48,9 @@ router.post(
   ],
   verifyOtp
 );
+
+// Protected: update name and/or avatar
+router.patch('/profile', protect, updateProfile);
 
 // Protected: returns the logged-in user's profile
 router.get('/me', protect, (req, res) => {

@@ -476,4 +476,54 @@ const signin = async (req, res, next) => {
   }
 };
 
-module.exports = { sendOtp, verifyOtp, verifyEmail, confirmEmail, sendEmailOtp, verifyEmailOtp, signup, signin };
+// PATCH /api/auth/profile  (protected — requires JWT)
+// Accepts: { name?, avatar? }  — both optional, at least one must be present
+const updateProfile = async (req, res, next) => {
+  try {
+    const { name, avatar } = req.body;
+    const updates = {};
+
+    if (name !== undefined) {
+      const trimmed = String(name).trim();
+      if (trimmed.length < 2 || trimmed.length > 60) {
+        return res.status(400).json({ success: false, message: 'Name must be 2–60 characters' });
+      }
+      updates.name = trimmed;
+    }
+
+    if (avatar !== undefined) {
+      // Accept a Cloudinary URL or any HTTPS URL
+      if (typeof avatar !== 'string' || !avatar.startsWith('http')) {
+        return res.status(400).json({ success: false, message: 'Invalid avatar URL' });
+      }
+      updates.avatar = avatar;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, message: 'No fields to update' });
+    }
+
+    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+
+    res.json({
+      success: true,
+      user: {
+        id:                    user._id,
+        phone:                 user.phone,
+        name:                  user.name,
+        email:                 user.email,
+        emailVerified:         user.emailVerified,
+        avatar:                user.avatar,
+        trustLevel:            user.trustLevel,
+        completedTransactions: user.completedTransactions,
+        averageRating:         user.averageRating,
+        campus:                user.campus,
+        createdAt:             user.createdAt,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { sendOtp, verifyOtp, verifyEmail, confirmEmail, sendEmailOtp, verifyEmailOtp, signup, signin, updateProfile };
