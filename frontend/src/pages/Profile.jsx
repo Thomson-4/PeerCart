@@ -267,7 +267,7 @@ function ListingCard({ item, onDeleted, onStatusChanged }) {
     setBusy(true);
     const newStatus = item.type === 'rent' ? 'rented' : 'sold';
     try {
-      await listingsApi.update(item._id, { status: newStatus });
+      await listingsApi.markStatus(item._id, newStatus);
       onStatusChanged(item._id, newStatus);
     } catch (_) {}
     finally { setBusy(false); setConfirmSold(false); }

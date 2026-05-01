@@ -160,8 +160,9 @@ const updateListing = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not authorised to edit this listing' });
     }
 
-    // Strip fields that must never change after creation
-    const { seller, campus, type, liveCaptureVerified, renewalCount, ...updates } = req.body;
+    // Strip fields that must never change after creation or via this endpoint
+    // status is managed via PATCH /:id/status only
+    const { seller, campus, type, liveCaptureVerified, renewalCount, status, ...updates } = req.body;
 
     const updated = await Listing.findByIdAndUpdate(req.params.id, updates, {
       new: true,
@@ -169,6 +170,35 @@ const updateListing = async (req, res, next) => {
     });
 
     res.json({ success: true, listing: updated });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /api/listings/:id/status  — seller marks as sold / rented / active
+const SELLER_ALLOWED_STATUSES = ['active', 'sold', 'rented'];
+const markStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    if (!SELLER_ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `status must be one of: ${SELLER_ALLOWED_STATUSES.join(', ')}`,
+      });
+    }
+
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) {
+      return res.status(404).json({ success: false, message: 'Listing not found' });
+    }
+    if (listing.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorised' });
+    }
+
+    listing.status = status;
+    await listing.save();
+
+    res.json({ success: true, listing });
   } catch (err) {
     next(err);
   }
@@ -229,4 +259,4 @@ const renewListing = async (req, res, next) => {
   }
 };
 
-module.exports = { createListing, getListings, getListing, updateListing, deleteListing, renewListing };
+module.exports = { createListing, getListings, getListing, updateListing, markStatus, deleteListing, renewListing };
