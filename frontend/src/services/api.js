@@ -43,12 +43,13 @@ export const auth = {
 };
 
 export const listings = {
-  getAll:  (params = {}) => req(`/api/listings${qs(params)}`),
-  getMine: ()            => req('/api/listings?mine=true'),
-  getOne:  (id)          => req(`/api/listings/${id}`),
-  create:  (body)        => req('/api/listings',     { method: 'POST',   body: JSON.stringify(body) }),
-  update:  (id, body)    => req(`/api/listings/${id}`, { method: 'PUT',  body: JSON.stringify(body) }),
-  remove:  (id)          => req(`/api/listings/${id}`, { method: 'DELETE' }),
+  getAll:     (params = {}) => req(`/api/listings${qs(params)}`),
+  getMine:    ()            => req('/api/listings?mine=true'),
+  getOne:     (id)          => req(`/api/listings/${id}`),
+  create:     (body)        => req('/api/listings',              { method: 'POST',  body: JSON.stringify(body) }),
+  update:     (id, body)    => req(`/api/listings/${id}`,        { method: 'PUT',   body: JSON.stringify(body) }),
+  markStatus: (id, status)  => req(`/api/listings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  remove:     (id)          => req(`/api/listings/${id}`,        { method: 'DELETE' }),
 };
 
 export const needs = {

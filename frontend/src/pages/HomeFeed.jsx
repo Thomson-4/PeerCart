@@ -112,7 +112,12 @@ export default function HomeFeed() {
     }
   }, [activeMode, activeCategory, debouncedQuery]);
 
-  useEffect(() => { fetchListings(); }, [fetchListings]);
+  useEffect(() => {
+    fetchListings();
+    // Auto-refresh every 60s so sold/rented listings disappear without manual refresh
+    const timer = setInterval(fetchListings, 60_000);
+    return () => clearInterval(timer);
+  }, [fetchListings]);
 
   const showDemo = !loading && !error && items.length === 0 && !debouncedQuery.trim();
   const displayItems = showDemo ? DEMO_ITEMS : items;
