@@ -177,11 +177,51 @@ export default function ListingDetail() {
     }
   };
 
-  /* ── Loading ───────────────────────────────────────────────────── */
+  /* ── Loading skeleton ──────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader size={32} className="animate-spin text-accent" />
+      <div className="w-full pb-24 animate-in fade-in duration-300">
+        {/* Back button placeholder */}
+        <div className="h-6 w-20 skeleton rounded-lg mb-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+          {/* Left: image */}
+          <div className="space-y-3">
+            <div className="aspect-square w-full skeleton rounded-2xl" />
+          </div>
+          {/* Right: details */}
+          <div className="flex flex-col gap-5">
+            {/* Category + condition chips */}
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-24 skeleton rounded-full" />
+              <div className="h-5 w-16 skeleton rounded-full" />
+            </div>
+            {/* Title */}
+            <div className="space-y-2">
+              <div className="h-8 w-3/4 skeleton rounded-xl" />
+              <div className="h-8 w-1/2 skeleton rounded-xl" />
+            </div>
+            {/* Price */}
+            <div className="h-12 w-36 skeleton rounded-xl" />
+            {/* Description */}
+            <div className="bento-panel p-4 space-y-2">
+              <div className="h-4 w-20 skeleton rounded-lg" />
+              <div className="h-3 w-full skeleton rounded-lg" />
+              <div className="h-3 w-full skeleton rounded-lg" />
+              <div className="h-3 w-2/3 skeleton rounded-lg" />
+            </div>
+            {/* Seller card */}
+            <div className="bento-panel p-4 flex items-center gap-4">
+              <div className="w-11 h-11 skeleton rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-32 skeleton rounded-lg" />
+                <div className="h-3 w-20 skeleton rounded-lg" />
+              </div>
+              <div className="h-4 w-24 skeleton rounded-lg" />
+            </div>
+            {/* CTA button */}
+            <div className="h-14 w-full skeleton rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }

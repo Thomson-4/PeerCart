@@ -566,8 +566,18 @@ export default function Messages() {
         `}>
           <div className="bento-panel flex-1 overflow-y-auto p-3 space-y-1">
             {loading && (
-              <div className="flex items-center justify-center h-32">
-                <Loader size={20} className="animate-spin text-accent" />
+              <div className="space-y-1 p-1">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl">
+                    <div className="w-12 h-12 skeleton rounded-xl shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-3/4 skeleton rounded-full" />
+                      <div className="h-2.5 w-1/2 skeleton rounded-full" />
+                      <div className="h-2.5 w-5/6 skeleton rounded-full" />
+                    </div>
+                    <div className="h-3 w-8 skeleton rounded-full shrink-0" />
+                  </div>
+                ))}
               </div>
             )}
             {!loading && conversations.length === 0 && (
