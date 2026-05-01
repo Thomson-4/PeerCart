@@ -139,96 +139,164 @@ function EmailVerifyForm({ onVerified }) {
   );
 }
 
+/* ─── Trust progression thresholds (mirrors backend trustProgression.js) ── */
+const TRUST_THRESHOLDS = {
+  2: { minTx: 3,  minRating: 4.0 },
+  3: { minTx: 10, minRating: 4.3 },
+};
+
+/* ─── Dual-requirement progress bar ─────────────────────────────── */
+function DualProgress({ txCount, rating, minTx, minRating }) {
+  const txPct     = Math.min(100, Math.round((txCount / minTx) * 100));
+  const ratingPct = Math.min(100, Math.round((rating  / minRating) * 100));
+  const txDone     = txCount >= minTx;
+  const ratingDone = rating  >= minRating;
+
+  return (
+    <div className="mt-3 space-y-2.5">
+      {/* Transactions bar */}
+      <div>
+        <div className="flex justify-between text-xs mb-1">
+          <span className={`font-semibold ${txDone ? 'text-green-400' : 'text-text-secondary'}`}>
+            {txDone ? '✓' : ''} Completed deals
+          </span>
+          <span className={`font-bold ${txDone ? 'text-green-400' : 'text-accent'}`}>
+            {txCount} / {minTx}
+          </span>
+        </div>
+        <div className="h-2 rounded-full bg-surface-elevated overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${txDone ? 'bg-green-400' : 'bg-accent'}`}
+            style={{ width: `${txPct}%` }}
+          />
+        </div>
+      </div>
+      {/* Rating bar */}
+      <div>
+        <div className="flex justify-between text-xs mb-1">
+          <span className={`font-semibold ${ratingDone ? 'text-green-400' : 'text-text-secondary'}`}>
+            {ratingDone ? '✓' : ''} Average rating
+          </span>
+          <span className={`font-bold ${ratingDone ? 'text-green-400' : 'text-yellow-400'}`}>
+            {rating.toFixed(1)} / {minRating}★
+          </span>
+        </div>
+        <div className="h-2 rounded-full bg-surface-elevated overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${ratingDone ? 'bg-green-400' : 'bg-yellow-400'}`}
+            style={{ width: `${ratingPct}%` }}
+          />
+        </div>
+      </div>
+      {/* Status line */}
+      <p className="text-xs text-text-secondary">
+        {txDone && ratingDone
+          ? '🎉 Both requirements met — level up coming after next transaction!'
+          : [
+              !txDone    && `${minTx - txCount} more deal${minTx - txCount > 1 ? 's' : ''} needed`,
+              !ratingDone && `maintain ${minRating}★ avg rating`,
+            ].filter(Boolean).join(' · ')}
+      </p>
+    </div>
+  );
+}
+
 /* ─── Trust Journey ─────────────────────────────────────────────── */
 function TrustJourney({ user }) {
-  const current = user?.trustLevel ?? 0;
-  const txCount = user?.completedTransactions ?? 0;
+  const current  = user?.trustLevel ?? 0;
+  const txCount  = user?.completedTransactions ?? 0;
+  const rating   = user?.averageRating ?? 0;
   const [emailVerified, setEmailVerified] = useState(false);
+
+  const UNLOCKS = [
+    'Browse listings · post needs',
+    'Sell items · transactions up to ₹1,500',
+    'Rent items · transactions up to ₹10,000',
+    'Priority matching · verified badge · ambassador perks',
+  ];
 
   return (
     <div className="bento-panel p-6 md:p-7">
-      <h2 className="text-xl font-black mb-5 tracking-tight">Your Trust Journey</h2>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-black tracking-tight">Trust Journey</h2>
+        <span className={`text-xs font-bold px-3 py-1 rounded-full border ${LEVELS[current].bg} ${LEVELS[current].border} ${LEVELS[current].color}`}>
+          Level {current} — {LEVELS[current].label}
+        </span>
+      </div>
+
       <div className="space-y-3">
-        {LEVELS.map(({ level, label, sublabel, color, bg, border }) => {
-          const done    = current > level;
-          const active  = current === level;
+        {LEVELS.map(({ level, label, color, bg, border }) => {
+          const done   = current > level;
+          const active = current === level;
+          const next   = level === current + 1;
 
           return (
             <div
               key={level}
               className={`rounded-2xl border p-4 transition-all ${
-                done   ? 'border-border-color bg-surface/40 opacity-70' :
+                done   ? 'border-border-color bg-surface/30 opacity-60' :
                 active ? `${border} ${bg}` :
-                         'border-border-color bg-surface/20 opacity-50'
+                next   ? 'border-border-color bg-surface/40' :
+                         'border-border-color bg-surface/20 opacity-40'
               }`}
             >
               <div className="flex items-start gap-3">
-                {/* Step indicator */}
-                <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${
-                  done   ? 'bg-green-400/20 text-green-400' :
+                {/* Indicator */}
+                <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${
+                  done   ? 'bg-green-400/20 text-green-400 border border-green-400/30' :
                   active ? `${bg} ${color} border ${border}` :
                            'bg-surface-elevated text-text-secondary border border-border-color'
                 }`}>
-                  {done ? <CheckCircle2 size={16} /> : level}
+                  {done ? <CheckCircle2 size={15} /> : level}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`font-bold text-sm ${done ? 'text-text-secondary line-through' : active ? color : 'text-text-secondary'}`}>
+                    <span className={`font-bold text-sm ${done ? 'text-text-secondary' : active ? color : 'text-text-secondary'}`}>
                       {label}
                     </span>
-                    {active && (
-                      <span className="text-[10px] font-bold uppercase tracking-widest bg-accent/20 text-accent px-2 py-0.5 rounded-full">
-                        Current
-                      </span>
-                    )}
-                    {done && (
-                      <span className="text-[10px] font-bold uppercase tracking-widest bg-green-400/20 text-green-400 px-2 py-0.5 rounded-full">
-                        Complete
-                      </span>
-                    )}
+                    {active && <span className="text-[10px] font-bold uppercase tracking-widest bg-accent/20 text-accent px-2 py-0.5 rounded-full">Current</span>}
+                    {done   && <span className="text-[10px] font-bold uppercase tracking-widest bg-green-400/20 text-green-400 px-2 py-0.5 rounded-full">✓ Done</span>}
+                    {next   && <span className="text-[10px] font-bold uppercase tracking-widest bg-surface-elevated text-text-secondary px-2 py-0.5 rounded-full">Next</span>}
                   </div>
-                  <p className="text-xs text-text-secondary mt-0.5">{sublabel}</p>
+                  <p className="text-xs text-text-secondary mt-0.5">{UNLOCKS[level]}</p>
 
-                  {/* Level 0 → 1 action: verify email via OTP */}
+                  {/* L0 active → verify email */}
                   {active && level === 0 && !emailVerified && (
                     <div className="mt-3">
-                      <p className="text-xs font-semibold text-text-primary mb-1">
-                        Verify your @reva.edu.in email to unlock selling
-                      </p>
+                      <p className="text-xs font-semibold text-text-primary mb-1">Verify your @reva.edu.in email to unlock selling</p>
                       <EmailVerifyForm onVerified={() => setEmailVerified(true)} />
                     </div>
                   )}
                   {active && level === 0 && emailVerified && (
                     <div className="mt-3 flex items-center gap-2 text-xs text-green-400 bg-green-400/10 border border-green-400/20 rounded-xl px-3 py-2">
-                      <CheckCircle2 size={14} /> Email verified! Refresh the page to see Level 1.
+                      <CheckCircle2 size={14} /> Email verified! Refresh to see Level 1.
                     </div>
                   )}
 
-                  {/* Level 1 → 2 action: transaction progress */}
+                  {/* L1 active → show dual progress toward L2 */}
                   {active && level === 1 && (
-                    <div className="mt-3">
-                      <p className="text-xs font-semibold text-text-primary mb-2">
-                        Complete 3 transactions rated 4★+ to reach Level 2
-                      </p>
-                      <div className="flex gap-1.5">
-                        {[0, 1, 2].map((i) => (
-                          <div
-                            key={i}
-                            className={`h-2 flex-1 rounded-full ${
-                              i < txCount ? 'bg-accent' : 'bg-surface-elevated'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-xs text-text-secondary mt-1.5">{txCount} / 3 completed</p>
-                    </div>
+                    <DualProgress
+                      txCount={txCount} rating={rating}
+                      minTx={TRUST_THRESHOLDS[2].minTx}
+                      minRating={TRUST_THRESHOLDS[2].minRating}
+                    />
                   )}
 
-                  {/* Level 2 → 3 action */}
+                  {/* L2 active → show dual progress toward L3 */}
                   {active && level === 2 && (
-                    <p className="text-xs text-text-secondary mt-2">
-                      Keep completing transactions and maintaining high ratings to earn Campus Rep status.
+                    <DualProgress
+                      txCount={txCount} rating={rating}
+                      minTx={TRUST_THRESHOLDS[3].minTx}
+                      minRating={TRUST_THRESHOLDS[3].minRating}
+                    />
+                  )}
+
+                  {/* Next level preview — show requirements */}
+                  {next && level > 0 && TRUST_THRESHOLDS[level] && (
+                    <p className="text-xs text-text-secondary mt-1.5">
+                      Requires {TRUST_THRESHOLDS[level].minTx} completed deals
+                      · {TRUST_THRESHOLDS[level].minRating}★ avg rating
                     </p>
                   )}
                 </div>
@@ -511,7 +579,7 @@ export default function Profile() {
     return <div className="bento-panel p-6 text-center text-red-400">{error}</div>;
   }
 
-  const trustScore   = Math.round((user?.averageRating || 0) * 20);
+  const nextThreshold = TRUST_THRESHOLDS[Math.min((user?.trustLevel ?? 0) + 1, 3)];
   const avatarUrl    = user?.avatar || null;
   const initials     = (user?.name || user?.phone || '?').slice(0, 2).toUpperCase();
   const currentLevel = LEVELS[user?.trustLevel ?? 0];
@@ -561,28 +629,62 @@ export default function Profile() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        {/* Completed deals */}
         <div className="bento-panel p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Trust Score</p>
-            <p className="text-3xl font-extrabold text-accent">{trustScore}<span className="text-sm font-normal text-text-secondary">/100</span></p>
+            <p className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Completed Deals</p>
+            <p className="text-3xl font-extrabold text-accent">
+              {user?.completedTransactions || 0}
+              {nextThreshold && (
+                <span className="text-sm font-normal text-text-secondary ml-1">
+                  / {nextThreshold.minTx} for L{(user?.trustLevel ?? 0) + 1}
+                </span>
+              )}
+            </p>
           </div>
           <ShieldCheck size={40} className="text-accent/20" />
         </div>
+
+        {/* Rating */}
         <div className="bento-panel p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Rating</p>
+            <p className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Avg Rating</p>
             <p className="text-3xl font-extrabold text-text-primary flex items-end gap-1.5">
               {(user?.averageRating || 0).toFixed(1)}
               <Star size={18} className="text-yellow-400 mb-0.5" fill="currentColor" />
             </p>
+            {nextThreshold && (user?.averageRating || 0) < nextThreshold.minRating && (
+              <p className="text-xs text-text-secondary mt-1">
+                Need {nextThreshold.minRating}★ for next level
+              </p>
+            )}
           </div>
-          <p className="text-sm font-bold text-text-secondary">{user?.completedTransactions || 0} deals</p>
+          <div className="flex flex-col items-end gap-1">
+            {[1,2,3,4,5].map((s) => (
+              <Star
+                key={s}
+                size={10}
+                className={s <= Math.round(user?.averageRating || 0) ? 'text-yellow-400' : 'text-border-color'}
+                fill={s <= Math.round(user?.averageRating || 0) ? 'currentColor' : 'none'}
+              />
+            ))}
+          </div>
         </div>
+
+        {/* Transaction limit */}
         <div className="bento-panel p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Can Sell Up To</p>
+            <p className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Per-Deal Limit</p>
             <p className="text-2xl font-extrabold text-text-primary">
-              {user?.trustLevel >= 2 ? '₹10,000' : user?.trustLevel >= 1 ? '₹1,500' : '—'}
+              {user?.trustLevel >= 3 ? 'Unlimited' :
+               user?.trustLevel >= 2 ? '₹10,000' :
+               user?.trustLevel >= 1 ? '₹1,500' : '—'}
+            </p>
+            <p className="text-xs text-text-secondary mt-1">
+              {user?.trustLevel >= 1
+                ? `Level ${user.trustLevel} · raises with trust`
+                : 'Verify email to unlock selling'}
             </p>
           </div>
           <Lock size={36} className="text-text-secondary/20" />
