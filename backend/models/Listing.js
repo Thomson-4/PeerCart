@@ -59,4 +59,7 @@ listingSchema.index({ campus: 1, category: 1, status: 1 });
 listingSchema.index({ campus: 1, type: 1, status: 1 });
 listingSchema.index({ expiresAt: 1, status: 1 }); // for expiry job
 
+// Full-text search — title weighted 3×, description 1×
+listingSchema.index({ title: 'text', description: 'text' }, { weights: { title: 3, description: 1 }, name: 'listing_text' });
+
 module.exports = mongoose.model('Listing', listingSchema);

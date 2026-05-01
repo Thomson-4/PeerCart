@@ -60,7 +60,7 @@ const getListings = async (req, res, next) => {
   try {
     if (!requireCampus(req.user, res)) return;
 
-    const { category, type, minPrice, maxPrice, condition, mine, page = 1, limit = DEFAULT_LIMIT } = req.query;
+    const { category, type, minPrice, maxPrice, condition, mine, q, page = 1, limit = DEFAULT_LIMIT } = req.query;
 
     const filter = mine === 'true'
       ? { seller: req.user._id }
@@ -75,14 +75,34 @@ const getListings = async (req, res, next) => {
       if (maxPrice != null) filter.price.$lte = Number(maxPrice);
     }
 
+    // Full-text search: use $text when query provided, fall back to $regex for partial words
+    const searchTerm = q?.trim();
+    if (searchTerm) {
+      if (searchTerm.length >= 3) {
+        filter.$text = { $search: searchTerm };
+      } else {
+        // Short queries (<3 chars) use regex on title only — $text doesn't index short tokens
+        filter.title = { $regex: searchTerm, $options: 'i' };
+      }
+    }
+
     const pageNum  = Math.max(1, parseInt(page)  || 1);
     const limitNum = Math.min(MAX_LIMIT, Math.max(1, parseInt(limit) || DEFAULT_LIMIT));
     const skip     = (pageNum - 1) * limitNum;
 
+    // When using $text, sort by relevance score; otherwise sort by newest
+    const sortBy = searchTerm && searchTerm.length >= 3
+      ? { score: { $meta: 'textScore' }, createdAt: -1 }
+      : { createdAt: -1 };
+
+    const projection = searchTerm && searchTerm.length >= 3
+      ? { score: { $meta: 'textScore' } }
+      : {};
+
     const [listings, total] = await Promise.all([
-      Listing.find(filter)
+      Listing.find(filter, projection)
         .populate('seller', 'name avatar trustLevel averageRating')
-        .sort({ createdAt: -1 })
+        .sort(sortBy)
         .skip(skip)
         .limit(limitNum),
       Listing.countDocuments(filter),
