@@ -138,7 +138,14 @@ const initiate = async (req, res, next) => {
       }
     }
 
-    const amount  = listing.price;
+    // For rent: multiply per-day price by number of rental days
+    let rentalDays = 1;
+    if (type === 'rent') {
+      const start = new Date(rentalStartDate);
+      const end   = new Date(rentalEndDate);
+      rentalDays  = Math.max(1, Math.ceil((end - start) / 86_400_000));
+    }
+    const amount  = type === 'rent' ? listing.price * rentalDays : listing.price;
     const deposit = type === 'rent' ? (listing.rentalDeposit || 0) : 0;
     const total   = amount + deposit;
 
