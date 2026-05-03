@@ -1,202 +1,416 @@
+import { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ArrowRight, ShieldCheck, Zap, Users, Sparkles, MessageCircle, Star, PackageCheck, GraduationCap } from 'lucide-react';
-import AnimatedNumber from '../components/AnimatedNumber';
+import {
+  ArrowRight, ShieldCheck, Zap, Users, Sparkles,
+  Star, PackageCheck, GraduationCap, MessageSquare,
+  TrendingUp, BookOpen, Cpu, Home, ChevronRight,
+} from 'lucide-react';
 
+/* ── Scroll-reveal hook ─────────────────────────────────────────── */
+function useReveal() {
+  useEffect(() => {
+    const els = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('revealed');
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
+
+/* ── Floating orb ───────────────────────────────────────────────── */
+function Orb({ className }) {
+  return <div className={`orb animate-blob ${className}`} aria-hidden="true" />;
+}
+
+/* ── Animated number ticker ─────────────────────────────────────── */
+function AnimatedStat({ value, label, icon: Icon }) {
+  return (
+    <div className="bento-panel p-5 flex flex-col gap-3 reveal-scale hover:scale-105 transition-transform duration-300">
+      {Icon && <Icon size={20} className="text-accent" />}
+      <p className="text-3xl font-black stat-num text-text-primary">{value}</p>
+      <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">{label}</p>
+    </div>
+  );
+}
+
+/* ── Category pill card ─────────────────────────────────────────── */
+function CategoryCard({ icon: Icon, title, sub, color, delay }) {
+  return (
+    <NavLink
+      to="/feed"
+      className={`group relative overflow-hidden bento-panel p-5 flex flex-col gap-3 interactive-card reveal delay-${delay}`}
+    >
+      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${color}`}>
+        <Icon size={20} />
+      </div>
+      <div>
+        <p className="font-black text-base leading-snug">{title}</p>
+        <p className="text-xs text-text-secondary mt-0.5">{sub}</p>
+      </div>
+      <ChevronRight
+        size={16}
+        className="absolute bottom-4 right-4 text-text-secondary opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300"
+      />
+    </NavLink>
+  );
+}
+
+/* ── Feature block ──────────────────────────────────────────────── */
+function FeatureBlock({ icon: Icon, title, body, accent, delay }) {
+  return (
+    <div className={`bento-panel p-7 flex flex-col gap-4 reveal delay-${delay} hover:border-accent/40 transition-colors duration-300`}>
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${accent}`}>
+        <Icon size={22} />
+      </div>
+      <h3 className="text-lg font-black tracking-tight">{title}</h3>
+      <p className="text-sm text-text-secondary leading-relaxed">{body}</p>
+    </div>
+  );
+}
+
+/* ── Marquee ticker ─────────────────────────────────────────────── */
+const TICKERS = [
+  '🔥 Sony WH-1000XM4 · ₹9,500', '📚 Maths III Textbook · ₹150/wk',
+  '❄️ Mini Fridge · ₹4,500', '🧮 FX-991EX Calculator · ₹1,200',
+  '💻 MacBook Air M1 · ₹55,000', '👔 Formal Blazer · ₹800/day',
+  '🚴 Cycle · ₹200/day', '🎧 Boat Nirvana · ₹2,800',
+];
+
+function MarqueeRow() {
+  const items = [...TICKERS, ...TICKERS]; // double for seamless loop
+  return (
+    <div className="w-full overflow-hidden py-3 border-y border-border-color bg-surface/40 backdrop-blur-sm">
+      <div className="marquee-track">
+        {items.map((t, i) => (
+          <span key={i} className="text-xs font-bold text-text-secondary whitespace-nowrap flex items-center gap-3">
+            {t}
+            <span className="w-1 h-1 rounded-full bg-border-color inline-block" />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Main ───────────────────────────────────────────────────────── */
 export default function Landing() {
+  useReveal();
+
   const categories = [
-    { title: 'Electronics', subtitle: 'Headphones, laptops, calculators' },
-    { title: 'Books', subtitle: 'Books, guides, and learning tools' },
-    { title: 'Home Essentials', subtitle: 'Furniture, appliances, and essentials' },
-    { title: 'Rentals', subtitle: 'Borrow short-term for lower cost' },
+    { icon: Cpu,         title: 'Electronics',     sub: 'Laptops, headphones, calcs', color: 'bg-accent/15 text-accent',           delay: '100' },
+    { icon: BookOpen,    title: 'Textbooks',        sub: 'Notes, guides, study tools',  color: 'bg-neon-cyan/15 text-neon-cyan',      delay: '200' },
+    { icon: Home,        title: 'Hostel Essentials', sub: 'Kettles, fridges, appliances', color: 'bg-secondary-accent/15 text-secondary-accent', delay: '300' },
+    { icon: GraduationCap, title: 'Formal Wear',   sub: 'Blazers, formals on rent',    color: 'bg-neon-pink/15 text-neon-pink',      delay: '400' },
   ];
 
   const featured = [
-    { title: 'Sony WH-1000XM4', price: 'Rs 9,500', tag: 'Buy' },
-    { title: 'Maths III Textbook', price: 'Rs 150/week', tag: 'Rent' },
-    { title: 'Mini Fridge', price: 'Rs 4,500', tag: 'Sell' },
-    { title: 'Scientific Calculator', price: 'Rs 120/day', tag: 'Rent' },
+    { title: 'Sony WH-1000XM4',       price: '₹9,500',    tag: 'Buy',  img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600' },
+    { title: 'Maths III Textbook',     price: '₹150/week', tag: 'Rent', img: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=600' },
+    { title: 'Mini Fridge',            price: '₹4,500',    tag: 'Buy',  img: 'https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?auto=format&fit=crop&q=80&w=600' },
+    { title: 'Scientific Calculator',  price: '₹120/day',  tag: 'Rent', img: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&q=80&w=600' },
   ];
 
+  const tagStyles = {
+    Buy:  'bg-accent text-white',
+    Rent: 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/40',
+    Sell: 'bg-secondary-accent/20 text-secondary-accent border border-secondary-accent/40',
+  };
+
   return (
-    <div className="flex flex-col gap-20 pb-20 animate-in fade-in duration-1000">
-      <section className="rounded-3xl border border-border-color bg-surface/85 p-6 md:p-10 gradient-stroke">
-        <div className="grid gap-10 lg:grid-cols-[1.15fr_1fr] lg:items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-border-color bg-surface-elevated px-4 py-2">
-              <Sparkles size={14} className="text-secondary-accent" />
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">Verified Peer Marketplace</span>
-            </div>
+    <div className="flex flex-col gap-0 pb-24 -mt-8 -mx-4 sm:-mx-6 lg:-mx-12 overflow-x-hidden">
 
-            <h1 className="mt-6 text-4xl md:text-6xl font-black tracking-tight leading-[1.04]">
-              Your trusted marketplace,
-              <span className="block text-accent">styled like a modern social app.</span>
-            </h1>
+      {/* ── HERO ─────────────────────────────────────────── */}
+      <section className="relative min-h-[92vh] flex flex-col justify-center px-4 sm:px-8 lg:px-16 pt-20 pb-16 overflow-hidden">
 
-            <p className="mt-5 max-w-2xl text-base md:text-lg text-text-secondary leading-relaxed">
-              Buy, sell, and rent from verified people nearby. Fast discovery, trust-first interactions, and clean handoffs.
-            </p>
+        {/* Background orbs */}
+        <Orb className="w-[600px] h-[600px] -top-40 -left-40 bg-accent/20 [animation-delay:0s]" />
+        <Orb className="w-[500px] h-[500px] top-[30%] -right-28 bg-secondary-accent/15 [animation-delay:2s]" />
+        <Orb className="w-[400px] h-[400px] bottom-0 left-1/2 -translate-x-1/2 bg-neon-cyan/10 [animation-delay:4s]" />
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              <NavLink to="/feed" className="btn-primary w-auto rounded-full px-7 py-3">
-                Explore Marketplace <ArrowRight size={18} />
-              </NavLink>
-              <NavLink to="/add" className="btn-secondary w-auto rounded-full px-7 py-3">
-                Post Your Item
-              </NavLink>
-            </div>
-          </div>
+        <div className="relative z-10 max-w-7xl mx-auto w-full">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bento-panel p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-secondary">Trust Score</p>
-              <p className="mt-3 text-3xl font-black tabular-nums">
-                <AnimatedNumber end={97.4} duration={1800} decimals={1} />
+            {/* Left */}
+            <div className="flex flex-col gap-7">
+              {/* Animated pill badge */}
+              <div className="animate-slide-up flex items-center gap-2 self-start">
+                <div className="relative">
+                  <div className="w-2 h-2 rounded-full bg-secondary-accent animate-ping-slow absolute" />
+                  <div className="w-2 h-2 rounded-full bg-secondary-accent" />
+                </div>
+                <span className="text-xs font-extrabold uppercase tracking-[0.16em] text-text-secondary">
+                  Campus Marketplace · Live Now
+                </span>
+              </div>
+
+              {/* Headline */}
+              <div className="animate-slide-up delay-100">
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.0]">
+                  Buy, sell &<br />
+                  <span className="gradient-text">rent anything</span>
+                  <br />on campus.
+                </h1>
+              </div>
+
+              <p className="animate-slide-up delay-200 text-lg text-text-secondary leading-relaxed max-w-lg">
+                PeerCart connects REVA students for trusted peer-to-peer deals — from textbooks to electronics to hostel gear.
               </p>
-              <p className="mt-2 text-sm text-text-secondary">Profile-verified users only</p>
+
+              {/* CTAs */}
+              <div className="animate-slide-up delay-300 flex flex-col sm:flex-row gap-3">
+                <NavLink to="/feed" className="btn-primary rounded-2xl px-8 py-4 text-base glow-accent">
+                  Browse Feed <ArrowRight size={20} />
+                </NavLink>
+                <NavLink to="/login" className="btn-ghost rounded-2xl px-8 py-4 text-base">
+                  Sign In Free
+                </NavLink>
+              </div>
+
+              {/* Social proof micro strip */}
+              <div className="animate-slide-up delay-400 flex items-center gap-4 pt-2">
+                <div className="flex -space-x-2">
+                  {[42, 43, 44, 45, 46].map((n) => (
+                    <img
+                      key={n}
+                      src={`https://i.pravatar.cc/40?img=${n}`}
+                      className="w-8 h-8 rounded-full border-2 border-background object-cover"
+                      alt="user"
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-text-secondary">
+                  <strong className="text-text-primary">240+</strong> students active this week
+                </p>
+              </div>
             </div>
-            <div className="bento-panel p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-secondary">Active listings</p>
-              <p className="mt-3 text-3xl font-black tabular-nums">
-                <AnimatedNumber end={2.1} duration={2000} decimals={1} suffix="K+" />
-              </p>
-              <p className="mt-2 text-sm text-text-secondary">Live around your city</p>
-            </div>
-            <div className="bento-panel p-4 col-span-2">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-secondary">Smart Discovery</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {['Buy', 'Sell', 'Rent', 'Needs Board'].map((pill) => (
-                  <span key={pill} className="rounded-full bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
-                    {pill}
-                  </span>
-                ))}
+
+            {/* Right — bento stats */}
+            <div className="animate-scale-in delay-300 grid grid-cols-2 gap-4">
+              <div className="bento-panel p-6 col-span-2 flex items-center gap-5 hover:border-accent/40 transition-colors">
+                <div className="w-14 h-14 rounded-2xl bg-accent/15 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={26} className="text-accent" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-text-secondary mb-1">Trust Score</p>
+                  <p className="text-4xl font-black stat-num gradient-text-warm">97.4</p>
+                  <p className="text-xs text-text-secondary mt-1">Campus-verified users only</p>
+                </div>
+              </div>
+
+              <div className="bento-panel p-5 hover:border-secondary-accent/40 transition-colors">
+                <TrendingUp size={18} className="text-secondary-accent mb-2" />
+                <p className="text-3xl font-black text-text-primary">2.1K+</p>
+                <p className="text-xs text-text-secondary mt-1 font-semibold">Active listings</p>
+              </div>
+
+              <div className="bento-panel p-5 hover:border-neon-cyan/40 transition-colors">
+                <Star size={18} className="text-neon-cyan mb-2" fill="currentColor" />
+                <p className="text-3xl font-black text-text-primary">4.9</p>
+                <p className="text-xs text-text-secondary mt-1 font-semibold">Avg seller rating</p>
+              </div>
+
+              <div className="bento-panel p-5 col-span-2 overflow-hidden relative hover:border-accent/30 transition-colors">
+                <p className="text-xs font-bold uppercase tracking-widest text-text-secondary mb-3">Smart Discovery</p>
+                <div className="flex flex-wrap gap-2">
+                  {['Buy', 'Sell', 'Rent', 'Need Board', 'Books', 'Electronics'].map((pill) => (
+                    <span key={pill} className="chip active-style text-xs font-bold px-3 py-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent">
+                      {pill}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-border-color bg-surface/85 p-6 md:p-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight">Shop by Category</h2>
-          <NavLink to="/feed" className="text-sm font-bold text-accent">View all</NavLink>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categories.map((item) => (
-            <div key={item.title} className="bento-panel p-5 transition hover:border-accent/50">
-              <p className="text-lg font-bold">{item.title}</p>
-              <p className="mt-2 text-sm text-text-secondary">{item.subtitle}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── TICKER MARQUEE ─────────────────────────────────── */}
+      <MarqueeRow />
 
-      <section className="rounded-3xl border border-border-color bg-surface/85 p-6 md:p-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight">Featured Listings</h2>
-          <NavLink to="/feed" className="text-sm font-bold text-accent">Shop feed</NavLink>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {featured.map((item) => (
-            <div key={item.title} className="bento-panel p-4">
-              <span className="inline-flex rounded-full bg-secondary-accent/18 px-2.5 py-1 text-[11px] font-bold text-secondary-accent">
-                {item.tag}
-              </span>
-              <p className="mt-3 font-bold">{item.title}</p>
-              <p className="mt-1 text-sm text-text-secondary">{item.price}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bento-panel p-6">
-          <ShieldCheck size={26} className="text-accent" />
-          <h3 className="mt-4 text-xl font-black tracking-tight">Identity Verified</h3>
-          <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-            Access is restricted to verified users for safer transactions.
-          </p>
-        </div>
-        <div className="bento-panel p-6">
-          <Zap size={26} className="text-secondary-accent" />
-          <h3 className="mt-4 text-xl font-black tracking-tight">Fast Local Handoffs</h3>
-          <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-            Discover nearby listings and close deals quickly around your area.
-          </p>
-        </div>
-        <div className="bento-panel p-6">
-          <Users size={26} className="text-accent" />
-          <h3 className="mt-4 text-xl font-black tracking-tight">Built for Gen-Z</h3>
-          <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-            Social, visual, and trust-centric UX instead of utility-heavy clutter.
-          </p>
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-border-color bg-gradient-to-r from-accent/15 via-surface to-secondary-accent/10 p-8 md:p-10">
-        <div className="grid gap-7 md:grid-cols-[1.2fr_1fr] md:items-center">
+      {/* ── CATEGORIES ─────────────────────────────────────── */}
+      <section className="px-4 sm:px-8 lg:px-16 py-20 max-w-7xl mx-auto w-full">
+        <div className="flex items-end justify-between mb-10">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.15em] text-text-secondary">Social Proof</p>
-            <h2 className="mt-3 text-3xl md:text-4xl font-black tracking-tight">
-              <span className="tabular-nums text-accent">
-                <AnimatedNumber end={10000} duration={2200} suffix="+" />
-              </span>{' '}
-              peer-to-peer trades completed.
+            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-secondary-accent mb-2">Shop by Category</p>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight reveal">
+              Everything a student needs.
             </h2>
-            <p className="mt-3 text-text-secondary">PeerCart users rely on trust scores and reviews before every meetup.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bento-panel p-4">
-              <Star size={16} className="text-secondary-accent" />
-              <p className="mt-2 text-2xl font-black tabular-nums">
-                <AnimatedNumber end={4.9} duration={1600} decimals={1} suffix="/5" />
-              </p>
-              <p className="text-xs text-text-secondary">Avg rating</p>
-            </div>
-            <div className="bento-panel p-4">
-              <PackageCheck size={16} className="text-accent" />
-              <p className="mt-2 text-2xl font-black tabular-nums">
-                <AnimatedNumber end={2} duration={1700} suffix="K+" />
-              </p>
-              <p className="text-xs text-text-secondary">Active listings</p>
-            </div>
-          </div>
+          <NavLink to="/feed" className="text-sm font-bold text-accent flex items-center gap-1 hover:gap-2 transition-all">
+            View all <ArrowRight size={15} />
+          </NavLink>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {categories.map((cat) => (
+            <CategoryCard key={cat.title} {...cat} />
+          ))}
         </div>
       </section>
 
-      <section className="rounded-3xl border border-border-color bg-surface/85 p-6 md:p-8">
-        <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
+      {/* ── FEATURED LISTINGS ──────────────────────────────── */}
+      <section className="px-4 sm:px-8 lg:px-16 pb-20 max-w-7xl mx-auto w-full">
+        <div className="flex items-end justify-between mb-10">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.15em] text-text-secondary">Weekly Market Pulse</p>
-            <h2 className="mt-2 text-3xl md:text-4xl font-black tracking-tight">Stay updated with top local deals</h2>
-            <p className="mt-2 text-text-secondary">Get curated trending categories, best prices, and trusted need requests.</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-accent mb-2">Handpicked</p>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight reveal">
+              Featured right now.
+            </h2>
           </div>
-          <div className="flex items-center rounded-full border border-border-color bg-surface-elevated p-1">
-            <button className="rounded-full bg-accent px-4 py-2 text-sm font-bold text-white">Subscribe</button>
-            <span className="px-3 text-xs font-bold uppercase tracking-[0.12em] text-text-secondary">No spam</span>
+          <NavLink to="/feed" className="text-sm font-bold text-accent flex items-center gap-1 hover:gap-2 transition-all">
+            Shop feed <ArrowRight size={15} />
+          </NavLink>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {featured.map((item, i) => (
+            <NavLink
+              to="/feed"
+              key={item.title}
+              className={`group relative overflow-hidden rounded-2xl border border-border-color bg-surface interactive-card reveal delay-${(i + 1) * 100}`}
+            >
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src={item.img}
+                  alt={item.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+              </div>
+              <div className="p-4">
+                <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full ${tagStyles[item.tag]}`}>
+                  {item.tag}
+                </span>
+                <p className="mt-2 font-bold text-text-primary line-clamp-1">{item.title}</p>
+                <p className="mt-1 text-xl font-black text-accent">{item.price}</p>
+              </div>
+            </NavLink>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FEATURE HIGHLIGHTS ─────────────────────────────── */}
+      <section className="px-4 sm:px-8 lg:px-16 py-20 border-y border-border-color bg-surface-elevated/50 w-full">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-secondary-accent mb-3">Why PeerCart</p>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight reveal">
+              Built different, for students.
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <FeatureBlock
+              icon={ShieldCheck}
+              title="Campus-verified only"
+              body="Every user is verified via college email or phone. No strangers. Safer deals, always."
+              accent="bg-accent/15 text-accent"
+              delay="100"
+            />
+            <FeatureBlock
+              icon={Zap}
+              title="Fast local handoffs"
+              body="Listings are from people within your campus. Close deals in minutes, not days."
+              accent="bg-secondary-accent/15 text-secondary-accent"
+              delay="200"
+            />
+            <FeatureBlock
+              icon={Users}
+              title="Trust-first UX"
+              body="Trust scores, review history, and transparent ratings before every transaction."
+              accent="bg-neon-cyan/15 text-neon-cyan"
+              delay="300"
+            />
           </div>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-border-color bg-surface/85 p-6 md:p-8">
-        <h3 className="text-lg font-black mb-4">Resources</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <NavLink to="/needs" className="bento-panel p-4 hover:border-accent/50 transition">
-            <MessageCircle size={18} className="text-accent" />
-            <p className="mt-3 font-bold">Need Board</p>
-            <p className="text-sm text-text-secondary">Post what you need and get replies fast.</p>
+      {/* ── SOCIAL PROOF ───────────────────────────────────── */}
+      <section className="relative px-4 sm:px-8 lg:px-16 py-24 overflow-hidden w-full">
+        <Orb className="w-[500px] h-[500px] -bottom-32 -right-32 bg-accent/15 [animation-delay:1s]" />
+        <Orb className="w-[400px] h-[400px] top-0 -left-24 bg-secondary-accent/10 [animation-delay:3s]" />
+
+        <div className="relative z-10 max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+          <div className="reveal-left">
+            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-4">Social Proof</p>
+            <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.05] mb-6">
+              10,000+ trades<br /><span className="gradient-text">completed.</span>
+            </h2>
+            <p className="text-text-secondary text-lg leading-relaxed max-w-md">
+              PeerCart students rely on trust scores and real reviews before every campus meetup.
+            </p>
+            <NavLink to="/login" className="btn-primary mt-8 rounded-2xl px-7 py-4 inline-flex">
+              Join for free <ArrowRight size={20} />
+            </NavLink>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 reveal-right">
+            <AnimatedStat value="4.9/5" label="Avg seller rating" icon={Star} />
+            <AnimatedStat value="2K+" label="Active listings" icon={PackageCheck} />
+            <AnimatedStat value="97.4" label="Trust score" icon={ShieldCheck} />
+            <AnimatedStat value="240+" label="Weekly traders" icon={Users} />
+          </div>
+        </div>
+      </section>
+
+      {/* ── NEED BOARD CTA ─────────────────────────────────── */}
+      <section className="px-4 sm:px-8 lg:px-16 py-16 w-full">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative rounded-3xl overflow-hidden animated-border bg-surface p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8 reveal">
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-secondary-accent/10 pointer-events-none" />
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 trust-badge mb-4">
+                <MessageSquare size={12} /> Need Board
+              </div>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Can't find it? Post a need.</h2>
+              <p className="text-text-secondary max-w-md">
+                Let verified sellers come to you. Post what you need and get matched in minutes.
+              </p>
+            </div>
+            <NavLink to="/needs" className="relative z-10 btn-lime rounded-2xl px-8 py-4 text-base shrink-0 glow-lime">
+              Post a Need <ArrowRight size={20} />
+            </NavLink>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER LINKS ───────────────────────────────────── */}
+      <section className="px-4 sm:px-8 lg:px-16 py-16 border-t border-border-color w-full">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <NavLink to="/needs" className="bento-panel p-6 hover:border-accent/40 transition-colors group reveal delay-100">
+            <MessageSquare size={20} className="text-accent mb-3" />
+            <p className="font-black">Need Board</p>
+            <p className="text-sm text-text-secondary mt-1">Post what you need, get replies fast.</p>
+            <p className="text-xs text-accent mt-3 font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              Open <ChevronRight size={13} />
+            </p>
           </NavLink>
-          <NavLink to="/feed" className="bento-panel p-4 hover:border-accent/50 transition">
-            <GraduationCap size={18} className="text-secondary-accent" />
-            <p className="mt-3 font-bold">Verified Feed</p>
-            <p className="text-sm text-text-secondary">Browse trusted listings nearby.</p>
+          <NavLink to="/feed" className="bento-panel p-6 hover:border-secondary-accent/40 transition-colors group reveal delay-200">
+            <Sparkles size={20} className="text-secondary-accent mb-3" />
+            <p className="font-black">Verified Feed</p>
+            <p className="text-sm text-text-secondary mt-1">Browse trusted listings nearby.</p>
+            <p className="text-xs text-secondary-accent mt-3 font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              Browse <ChevronRight size={13} />
+            </p>
           </NavLink>
-          <NavLink to="/profile" className="bento-panel p-4 hover:border-accent/50 transition">
-            <Star size={18} className="text-accent" />
-            <p className="mt-3 font-bold">Trust Dashboard</p>
-            <p className="text-sm text-text-secondary">Track reviews, score, and activity.</p>
+          <NavLink to="/profile" className="bento-panel p-6 hover:border-neon-cyan/40 transition-colors group reveal delay-300">
+            <ShieldCheck size={20} className="text-neon-cyan mb-3" />
+            <p className="font-black">Trust Dashboard</p>
+            <p className="text-sm text-text-secondary mt-1">Track reviews, score & activity.</p>
+            <p className="text-xs text-neon-cyan mt-3 font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              View <ChevronRight size={13} />
+            </p>
           </NavLink>
         </div>
       </section>
+
     </div>
   );
 }
