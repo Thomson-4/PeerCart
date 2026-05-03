@@ -14,6 +14,8 @@ import ListingDetail from './pages/ListingDetail';
 import Messages from './pages/Messages';
 import MyOrders from './pages/MyOrders';
 import EditListing from './pages/EditListing';
+import AdminPanel from './pages/AdminPanel';
+import UserProfile from './pages/UserProfile';
 import useTheme from './hooks/useTheme';
 
 function ProtectedRoute({ children }) {
@@ -43,6 +45,8 @@ function AppRoutes() {
         <Route path="/messages/:convId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
         <Route path="/orders"           element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
         <Route path="/edit/:id"         element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
+        <Route path="/admin"      element={<AdminPanel />} />
+        <Route path="/user/:id"   element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

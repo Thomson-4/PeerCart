@@ -67,6 +67,7 @@ app.use('/api/upload',        uploadRoutes);
 app.use('/api/admin',         adminRoutes);
 app.use('/api/chat',          chatRoutes);           // Round 5
 app.use('/api/notifications', notificationRoutes);   // Round 6
+app.use('/api/users',         require('./routes/users'));
 app.use('/api/reports',       reportRoutes);         // Round 8C
 app.use('/api/ambassador',    ambassadorRoutes);     // Round 9
 

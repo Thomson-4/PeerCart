@@ -1,5 +1,7 @@
 const { validationResult } = require('express-validator');
 const Listing = require('../models/Listing');
+const Need = require('../models/Need');
+const { notifyNeedPosterOfListing } = require('../utils/notifications');
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
@@ -50,6 +52,18 @@ const createListing = async (req, res, next) => {
     });
 
     res.status(201).json({ success: true, listing });
+
+    // Auto-match: notify need posters in same category (non-blocking)
+    Need.find({
+      category: listing.category,
+      campus:   listing.campus,
+      status:   'open',
+      postedBy: { $ne: listing.seller },
+    }).select('postedBy title').limit(20).lean()
+      .then((needs) => Promise.all(
+        needs.map((n) => notifyNeedPosterOfListing(n.postedBy, listing.title, n.title))
+      ))
+      .catch((err) => console.error('[match] Auto-match failed:', err.message));
   } catch (err) {
     next(err);
   }

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, MapPin, Clock, Zap,
   MessageCircle, Tag, Package, Loader, AlertTriangle,
-  CheckCircle2, Camera, CalendarDays, X,
+  CheckCircle2, Camera, CalendarDays, X, Share2,
 } from 'lucide-react';
 import { listings as listingsApi, chat as chatApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -126,6 +126,7 @@ export default function ListingDetail() {
   const [chatLoading,  setChatLoading]  = useState(false);
   const [chatError,    setChatError]    = useState('');
   const [rentModal,    setRentModal]    = useState(false); // show date picker
+  const [copied,       setCopied]       = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -136,6 +137,23 @@ export default function ListingDetail() {
   }, [id]);
 
   const isOwn = user && listing && listing.seller?._id === user.id;
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: listing?.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (_) {
+      await navigator.clipboard.writeText(url).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   // For buy — go straight to chat
   const expressInterest = async (intentType) => {
@@ -375,7 +393,9 @@ export default function ListingDetail() {
               {(seller.name || 'U')[0].toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-text-primary truncate">{seller.name || 'Campus Student'}</p>
+              <Link to={`/user/${seller._id}`} className="font-bold text-text-primary truncate hover:text-accent transition-colors block">
+                {seller.name || 'Campus Student'}
+              </Link>
               <TrustBadge level={trustLvl} />
             </div>
             <div className="flex flex-col items-end gap-1 text-right shrink-0">
@@ -454,6 +474,16 @@ export default function ListingDetail() {
               </p>
             </div>
           )}
+
+          {/* Share */}
+          <button
+            onClick={handleShare}
+            className="w-full flex items-center justify-center gap-2 py-3 border border-border-color rounded-xl text-sm font-bold text-text-secondary hover:border-accent/40 hover:text-accent transition-colors"
+          >
+            {copied
+              ? <><CheckCircle2 size={15} className="text-green-400" /> Link copied!</>
+              : <><Share2 size={15} /> Share listing</>}
+          </button>
 
           {/* Stats row */}
           <div className="flex items-center gap-4 text-xs text-text-secondary pt-1">

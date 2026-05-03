@@ -14,10 +14,13 @@ import heaterImg from '../assets/water heater.webp';
 const MODES = ['All', 'Sell', 'Rent'];
 
 const CATEGORIES = [
-  { label: 'All',          value: '',                   icon: Sparkles },
-  { label: 'Electronics',  value: 'electronics',        icon: Laptop  },
+  { label: 'All',          value: '',                   icon: Sparkles  },
+  { label: 'Electronics',  value: 'electronics',        icon: Laptop   },
   { label: 'Textbooks',    value: 'textbooks',          icon: BookOpen },
-  { label: 'Hostel Gear',  value: 'hostel-essentials',  icon: Shirt   },
+  { label: 'Hostel Gear',  value: 'hostel-essentials',  icon: Shirt    },
+  { label: 'Formal Wear',  value: 'formal-wear',        icon: ShieldCheck },
+  { label: 'Cycles',       value: 'cycles',             icon: RefreshCw   },
+  { label: 'Hobby Gear',   value: 'hobby-gear',         icon: PackageSearch },
 ];
 
 const CATEGORY_LABELS = {

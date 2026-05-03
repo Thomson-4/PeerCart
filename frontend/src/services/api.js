@@ -88,6 +88,33 @@ export const notifications = {
   markAllRead: ()   => req('/api/notifications/read-all',    { method: 'PATCH' }),
 };
 
+export const users = {
+  getProfile: (id) => req(`/api/users/${id}`),
+};
+
+const adminReq = (path, options = {}) => {
+  const secret = sessionStorage.getItem('pc_admin_secret') || '';
+  return fetch(`${BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Secret': secret,
+      ...options.headers,
+    },
+  }).then(async (r) => {
+    const d = await r.json();
+    if (!r.ok) throw Object.assign(new Error(d.message || 'Request failed'), { status: r.status });
+    return d;
+  });
+};
+
+export const admin = {
+  getStats:       ()                    => adminReq('/api/admin/stats'),
+  getDisputes:    ()                    => adminReq('/api/admin/disputes'),
+  resolveDispute: (id, action, note)    => adminReq(`/api/admin/disputes/${id}/resolve`, { method: 'POST', body: JSON.stringify({ action, note }) }),
+  getUsers:       (params = {})         => adminReq(`/api/admin/users${qs(params)}`),
+};
+
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const upload = {

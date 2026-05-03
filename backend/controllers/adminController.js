@@ -171,4 +171,47 @@ const getStats = async (req, res, next) => {
   }
 };
 
-module.exports = { listUsers, listTransactions, listDisputes, setTrustLevel, getStats };
+// POST /api/admin/disputes/:id/resolve
+// body: { action: 'release' | 'refund', note? }
+const resolveDispute = async (req, res, next) => {
+  try {
+    const { action, note } = req.body;
+    if (!['release', 'refund'].includes(action)) {
+      return res.status(400).json({ success: false, message: 'action must be "release" or "refund"' });
+    }
+
+    const transaction = await Transaction.findById(req.params.id)
+      .populate('buyer',  'name phone')
+      .populate('seller', 'name phone')
+      .populate('listing', 'title');
+
+    if (!transaction) {
+      return res.status(404).json({ success: false, message: 'Transaction not found' });
+    }
+    if (transaction.status !== 'disputed') {
+      return res.status(400).json({ success: false, message: `Transaction status is "${transaction.status}", not "disputed"` });
+    }
+
+    if (action === 'release') {
+      // Release escrow to seller → completed
+      transaction.status           = 'completed';
+      transaction.escrowReleasedAt = new Date();
+      await transaction.save();
+      await User.findByIdAndUpdate(transaction.seller._id || transaction.seller, { $inc: { completedTransactions: 1 } });
+      console.log(`[admin] Dispute ${transaction._id} resolved: escrow released to seller`);
+    } else {
+      // Mark as cancelled (refund) — in production, trigger Razorpay refund API here
+      transaction.status = 'cancelled';
+      await transaction.save();
+      console.log(`[admin] Dispute ${transaction._id} resolved: refunded to buyer`);
+    }
+
+    if (note) console.log(`[admin] Resolution note: ${note}`);
+
+    res.json({ success: true, transaction, action });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { listUsers, listTransactions, listDisputes, setTrustLevel, getStats, resolveDispute };

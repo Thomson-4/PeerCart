@@ -105,6 +105,16 @@ const notifyAdminListingFlagged = (listingId, reportCount) => {
   console.log(`[ALERT] Listing ${listingId} has ${reportCount} reports — flagged for review`);
 };
 
+const notifyNeedPosterOfListing = async (posterId, listingTitle, needTitle) => {
+  const token = await getToken(posterId);
+  const body = `"${listingTitle}" was just listed — it might match your need!`;
+  console.log(`[notify] Need poster ${posterId}: listing match for "${needTitle}"`);
+  await Promise.all([
+    createNotification(posterId, 'match', '🎯 Listing match found!', body, '/feed'),
+    sendPushNotification(token, 'Listing match found!', body, { type: 'match', screen: 'Feed' }),
+  ]);
+};
+
 module.exports = {
   createNotification,
   notifyNewMessage,
@@ -114,4 +124,5 @@ module.exports = {
   notifySellerEscrowReleased,
   notifyDisputeRaised,
   notifyAdminListingFlagged,
+  notifyNeedPosterOfListing,
 };
