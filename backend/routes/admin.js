@@ -7,6 +7,7 @@ const {
   listDisputes,
   setTrustLevel,
   getStats,
+  resolveDispute,
 } = require('../controllers/adminController');
 const { getReports, resolveReport } = require('../controllers/reportController');
 const { getAllAmbassadors, payCommission } = require('../controllers/ambassadorController');
@@ -27,6 +28,7 @@ router.use(adminAuth);
 router.get('/users', listUsers);
 router.get('/transactions', listTransactions);
 router.get('/disputes', listDisputes);
+router.post('/disputes/:id/resolve', resolveDispute);
 router.get('/stats', getStats);
 router.put(
   '/users/:id/trust',

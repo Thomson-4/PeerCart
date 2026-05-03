@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ShoppingBag, Loader, Package, CheckCircle2, Clock,
   AlertTriangle, XCircle, ChevronRight, RefreshCw,
-  ShieldCheck, MessageCircle, Star, X, Tag,
+  ShieldCheck, MessageCircle, Star, X, Tag, Send,
 } from 'lucide-react';
 import { transactions as txApi, reviews as reviewsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -237,7 +237,7 @@ function ReviewModal({ tx, userId, onClose, onDone }) {
 }
 
 /* ── Transaction card ────────────────────────────────────────────── */
-function TxCard({ tx, userId, onRefresh, reviewed, onReviewed }) {
+function TxCard({ tx, userId, onRefresh, reviewed, onReviewed, onReview }) {
   const [confirming,  setConfirming]  = useState(false);
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [reviewOpen,  setReviewOpen]  = useState(false);
@@ -257,6 +257,7 @@ function TxCard({ tx, userId, onRefresh, reviewed, onReviewed }) {
     try {
       await txApi.confirmReceipt(tx._id);
       onRefresh();
+      onReview(tx); // prompt review
     } catch (err) {
       setActionError(err.message || 'Failed to confirm. Try again.');
     } finally {
@@ -410,6 +411,7 @@ export default function MyOrders() {
   const [filter,       setFilter]       = useState('all'); // all | buying | selling
   const [error,        setError]        = useState('');
   const [reviewedIds,  setReviewedIds]  = useState(new Set());
+  const [reviewTx,     setReviewTx]     = useState(null);
 
   const load = useCallback(async () => {
     setError('');
@@ -560,6 +562,7 @@ export default function MyOrders() {
               reviewed={reviewedIds.has(tx._id)}
               onReviewed={(id) => setReviewedIds((prev) => new Set([...prev, id]))}
               onRefresh={() => { setLoading(true); load(); }}
+              onReview={setReviewTx}
             />
           ))}
         </div>
@@ -575,6 +578,15 @@ export default function MyOrders() {
             <MessageCircle size={14} /> Open Messages
           </Link>
         </div>
+      )}
+
+      {reviewTx && (
+        <ReviewModal
+          tx={reviewTx}
+          userId={user?.id}
+          onClose={() => setReviewTx(null)}
+          onDone={() => setReviewTx(null)}
+        />
       )}
     </div>
   );
