@@ -6,6 +6,7 @@ const {
   getListings,
   getListing,
   updateListing,
+  markStatus,
   deleteListing,
   renewListing,
 } = require('../controllers/listingController');
@@ -102,6 +103,7 @@ router.post('/', requireTrust(1), createValidators, createListing);
 router.get('/', getListings);
 router.get('/:id', getListing);
 router.put('/:id', updateValidators, updateListing);
+router.patch('/:id/status', [body('status').isIn(['active', 'sold', 'rented']).withMessage('Invalid status')], markStatus);
 router.delete('/:id', deleteListing);
 
 // Round 8D — renew an expired/active listing (owner only, max 3 times)

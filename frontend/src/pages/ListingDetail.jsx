@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft, ShieldCheck, Star, MapPin, Clock, Zap,
+  ArrowLeft, ShieldCheck, MapPin, Clock, Zap,
   MessageCircle, Tag, Package, Loader, AlertTriangle,
-  CheckCircle2, Camera,
+  CheckCircle2, Camera, CalendarDays, X,
 } from 'lucide-react';
 import { listings as listingsApi, chat as chatApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -38,17 +38,94 @@ function TrustBadge({ level }) {
   );
 }
 
+/* ── Rent date picker modal ──────────────────────────────────────── */
+function RentDateModal({ listing, onClose, onConfirm, loading }) {
+  const today     = new Date().toISOString().split('T')[0];
+  const [start,   setStart] = useState('');
+  const [end,     setEnd]   = useState('');
+  const [err,     setErr]   = useState('');
+
+  const days = start && end
+    ? Math.max(1, Math.ceil((new Date(end) - new Date(start)) / 86_400_000))
+    : 0;
+
+  const handleConfirm = () => {
+    if (!start || !end)      { setErr('Please select both dates.'); return; }
+    if (end <= start)        { setErr('End date must be after start date.'); return; }
+    onConfirm(start, end, days);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm bg-surface border border-border-color rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border-color">
+          <div>
+            <h2 className="font-black text-lg text-text-primary flex items-center gap-2">
+              <CalendarDays size={18} className="text-accent" /> Pick Rental Dates
+            </h2>
+            <p className="text-xs text-text-secondary mt-0.5">{listing.title}</p>
+          </div>
+          <button onClick={onClose} disabled={loading}
+            className="w-8 h-8 rounded-full bg-surface-elevated hover:bg-border-color flex items-center justify-center text-text-secondary transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-text-secondary uppercase tracking-wide mb-1 block">Start date</label>
+              <input type="date" min={today} value={start}
+                onChange={(e) => { setStart(e.target.value); setErr(''); }}
+                className="input-base text-sm py-2" />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-text-secondary uppercase tracking-wide mb-1 block">End date</label>
+              <input type="date" min={start || today} value={end}
+                onChange={(e) => { setEnd(e.target.value); setErr(''); }}
+                className="input-base text-sm py-2" />
+            </div>
+          </div>
+
+          {days > 0 && (
+            <div className="rounded-xl bg-accent/5 border border-accent/20 px-4 py-3 flex items-center justify-between">
+              <span className="text-sm font-bold text-text-primary">{days} day{days > 1 ? 's' : ''}</span>
+              <span className="text-lg font-black text-accent">
+                ₹{((listing.price / 100) * days).toLocaleString('en-IN')}
+              </span>
+            </div>
+          )}
+
+          {err && (
+            <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2">{err}</p>
+          )}
+
+          <button
+            onClick={handleConfirm}
+            disabled={loading || days === 0}
+            className="w-full py-3.5 cta-gradient text-white font-extrabold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5"
+          >
+            {loading ? <Loader size={16} className="animate-spin" /> : <><MessageCircle size={16} /> Chat with owner</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ListingDetail() {
   const { id }      = useParams();
   const navigate    = useNavigate();
   const { user }    = useAuth();
 
-  const [listing,    setListing]    = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState('');
-  const [activeImg,  setActiveImg]  = useState(0);
-  const [chatLoading, setChatLoading] = useState(false);
-  const [chatError,  setChatError]  = useState('');
+  const [listing,      setListing]      = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
+  const [activeImg,    setActiveImg]    = useState(0);
+  const [chatLoading,  setChatLoading]  = useState(false);
+  const [chatError,    setChatError]    = useState('');
+  const [rentModal,    setRentModal]    = useState(false); // show date picker
 
   useEffect(() => {
     setLoading(true);
@@ -60,7 +137,7 @@ export default function ListingDetail() {
 
   const isOwn = user && listing && listing.seller?._id === user.id;
 
-  // Express interest → create/get conversation → send auto-message → go to chat
+  // For buy — go straight to chat
   const expressInterest = async (intentType) => {
     if (!user) { navigate('/login'); return; }
     if (isOwn) return;
@@ -69,15 +146,11 @@ export default function ListingDetail() {
     try {
       const convData = await chatApi.getOrCreate({ listingId: listing._id });
       const conv     = convData.conversation;
-
-      // Auto-send the interest message
       const msgs = {
-        buy:  `Hi! I'm interested in buying your "${listing.title}". Is it still available?`,
-        rent: `Hi! I'm OK for renting your "${listing.title}". When is it available and what's the deposit?`,
+        buy:          `Hi! I'm interested in buying your "${listing.title}". Is it still available?`,
         'rent-urgent': `Hi! I urgently need to rent your "${listing.title}" as soon as possible. Are you available soon?`,
       };
       await chatApi.sendMessage(conv._id, msgs[intentType] || msgs.buy);
-
       navigate(`/messages/${conv._id}`);
     } catch (err) {
       setChatError(err.message || 'Could not start conversation');
@@ -86,11 +159,69 @@ export default function ListingDetail() {
     }
   };
 
-  /* ── Loading ───────────────────────────────────────────────────── */
+  // For rent — after dates are picked, go to chat with dates in the message
+  const handleRentConfirm = async (start, end, days) => {
+    if (!user) { navigate('/login'); return; }
+    setChatLoading(true);
+    try {
+      const convData = await chatApi.getOrCreate({ listingId: listing._id });
+      const conv     = convData.conversation;
+      const total    = `₹${((listing.price / 100) * days).toLocaleString('en-IN')}`;
+      const msg      = `Hi! I'd like to rent your "${listing.title}" from ${start} to ${end} (${days} day${days > 1 ? 's' : ''}, total ${total}). Is it available?`;
+      await chatApi.sendMessage(conv._id, msg);
+      setRentModal(false);
+      navigate(`/messages/${conv._id}`);
+    } catch (err) {
+      setChatError(err.message || 'Could not start conversation');
+      setChatLoading(false);
+    }
+  };
+
+  /* ── Loading skeleton ──────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader size={32} className="animate-spin text-accent" />
+      <div className="w-full pb-24 animate-in fade-in duration-300">
+        {/* Back button placeholder */}
+        <div className="h-6 w-20 skeleton rounded-lg mb-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+          {/* Left: image */}
+          <div className="space-y-3">
+            <div className="aspect-square w-full skeleton rounded-2xl" />
+          </div>
+          {/* Right: details */}
+          <div className="flex flex-col gap-5">
+            {/* Category + condition chips */}
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-24 skeleton rounded-full" />
+              <div className="h-5 w-16 skeleton rounded-full" />
+            </div>
+            {/* Title */}
+            <div className="space-y-2">
+              <div className="h-8 w-3/4 skeleton rounded-xl" />
+              <div className="h-8 w-1/2 skeleton rounded-xl" />
+            </div>
+            {/* Price */}
+            <div className="h-12 w-36 skeleton rounded-xl" />
+            {/* Description */}
+            <div className="bento-panel p-4 space-y-2">
+              <div className="h-4 w-20 skeleton rounded-lg" />
+              <div className="h-3 w-full skeleton rounded-lg" />
+              <div className="h-3 w-full skeleton rounded-lg" />
+              <div className="h-3 w-2/3 skeleton rounded-lg" />
+            </div>
+            {/* Seller card */}
+            <div className="bento-panel p-4 flex items-center gap-4">
+              <div className="w-11 h-11 skeleton rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-32 skeleton rounded-lg" />
+                <div className="h-3 w-20 skeleton rounded-lg" />
+              </div>
+              <div className="h-4 w-24 skeleton rounded-lg" />
+            </div>
+            {/* CTA button */}
+            <div className="h-14 w-full skeleton rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -117,6 +248,14 @@ export default function ListingDetail() {
 
   return (
     <div className="w-full animate-in fade-in duration-500 pb-24">
+      {rentModal && (
+        <RentDateModal
+          listing={listing}
+          onClose={() => setRentModal(false)}
+          onConfirm={handleRentConfirm}
+          loading={chatLoading}
+        />
+      )}
 
       {/* ── Back button ─────────────────────────────────────────── */}
       <button
@@ -292,13 +431,13 @@ export default function ListingDetail() {
             /* ── RENT actions ── */
             <div className="space-y-3">
               <button
-                onClick={() => expressInterest('rent')}
+                onClick={() => setRentModal(true)}
                 disabled={chatLoading}
                 className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-extrabold rounded-xl shadow-md hover:-translate-y-0.5 transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {chatLoading
                   ? <Loader size={18} className="animate-spin" />
-                  : <><MessageCircle size={18} /> I'm OK for renting</>
+                  : <><CalendarDays size={18} /> Pick dates & rent</>
                 }
               </button>
               {listing.urgent && (
@@ -311,7 +450,7 @@ export default function ListingDetail() {
                 </button>
               )}
               <p className="text-center text-xs text-text-secondary">
-                Opens a chat with the owner to arrange the rental.
+                Select your rental dates, then chat with the owner.
               </p>
             </div>
           )}

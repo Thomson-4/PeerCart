@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Send, Filter, Search, Loader } from 'lucide-react';
+import { Send, Filter, Search, Loader, Inbox, SearchX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NeedCard from '../components/NeedCard';
+import EmptyState from '../components/EmptyState';
 import { needs as needsApi, chat as chatApi } from '../services/api';
 
 const CATEGORIES = [
@@ -222,17 +223,37 @@ export default function NeedBoard() {
           </div>
         </div>
 
+        {/* Loading */}
         {loading && (
-          <div className="bento-panel flex min-h-[200px] items-center justify-center gap-3">
-            <Loader size={24} className="animate-spin text-accent" />
-            <p className="text-text-secondary font-semibold">Loading needs…</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bento-panel p-5 space-y-3 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full skeleton" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-24 skeleton rounded-full" />
+                    <div className="h-2 w-16 skeleton rounded-full" />
+                  </div>
+                </div>
+                <div className="h-4 w-3/4 skeleton rounded-lg" />
+                <div className="h-3 w-full skeleton rounded-lg" />
+                <div className="h-3 w-2/3 skeleton rounded-lg" />
+                <div className="h-9 w-full skeleton rounded-xl mt-2" />
+              </div>
+            ))}
           </div>
         )}
 
+        {/* Error */}
         {!loading && error && (
-          <div className="bento-panel p-6 text-center text-red-400">{error}</div>
+          <EmptyState
+            error={error}
+            description="Check your connection and try again."
+            onRetry={fetchNeeds}
+          />
         )}
 
+        {/* Needs grid */}
         {!loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6">
             {filteredNeeds.map((need) => (
@@ -243,9 +264,28 @@ export default function NeedBoard() {
                 onHaveThis={() => handleHaveThis(need.id, need.title)}
               />
             ))}
-            {filteredNeeds.length === 0 && (
-              <div className="bento-panel p-6 text-center text-text-secondary md:col-span-2">
-                No needs posted yet. Be the first!
+
+            {/* No results from search/filter */}
+            {filteredNeeds.length === 0 && needs.length > 0 && (
+              <div className="md:col-span-2">
+                <EmptyState
+                  icon={SearchX}
+                  title="No matches found"
+                  description={`Nothing matched "${query || urgencyFilter}" — try different keywords or clear the filter.`}
+                  action={{ label: 'Clear filters', onClick: () => { setQuery(''); setUrgencyFilter('All'); } }}
+                />
+              </div>
+            )}
+
+            {/* Truly empty board */}
+            {filteredNeeds.length === 0 && needs.length === 0 && (
+              <div className="md:col-span-2">
+                <EmptyState
+                  icon={Inbox}
+                  title="No requests yet"
+                  description="No one has posted a need yet. Use the form on the left to broadcast what you're looking for — verified sellers will respond."
+                  action={{ label: 'Browse listings instead', to: '/feed' }}
+                />
               </div>
             )}
           </div>

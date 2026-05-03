@@ -43,12 +43,13 @@ export const auth = {
 };
 
 export const listings = {
-  getAll:  (params = {}) => req(`/api/listings${qs(params)}`),
-  getMine: ()            => req('/api/listings?mine=true'),
-  getOne:  (id)          => req(`/api/listings/${id}`),
-  create:  (body)        => req('/api/listings',     { method: 'POST',   body: JSON.stringify(body) }),
-  update:  (id, body)    => req(`/api/listings/${id}`, { method: 'PUT',  body: JSON.stringify(body) }),
-  remove:  (id)          => req(`/api/listings/${id}`, { method: 'DELETE' }),
+  getAll:     (params = {}) => req(`/api/listings${qs(params)}`),
+  getMine:    ()            => req('/api/listings?mine=true'),
+  getOne:     (id)          => req(`/api/listings/${id}`),
+  create:     (body)        => req('/api/listings',              { method: 'POST',  body: JSON.stringify(body) }),
+  update:     (id, body)    => req(`/api/listings/${id}`,        { method: 'PUT',   body: JSON.stringify(body) }),
+  markStatus: (id, status)  => req(`/api/listings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  remove:     (id)          => req(`/api/listings/${id}`,        { method: 'DELETE' }),
 };
 
 export const needs = {
@@ -63,6 +64,11 @@ export const transactions = {
   confirmReceipt: (id)                 => req(`/api/transactions/${id}/confirm-receipt`, { method: 'POST' }),
   raiseDispute:   (id, reason)         => req(`/api/transactions/${id}/raise-dispute`,   { method: 'POST', body: JSON.stringify({ reason }) }),
   myTransactions: (params = {})        => req(`/api/transactions/my${qs(params)}`),
+};
+
+export const reviews = {
+  create: (transactionId, rating, comment) =>
+    req('/api/reviews', { method: 'POST', body: JSON.stringify({ transactionId, rating, comment }) }),
 };
 
 export const chat = {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search, ChevronRight, Sparkles, BookOpen, Laptop,
   Shirt, PackageSearch, Loader, ShieldCheck, RefreshCw,
@@ -76,9 +76,23 @@ export default function HomeFeed() {
   const [activeMode,     setActiveMode]     = useState('All');
   const [activeCategory, setActiveCategory] = useState('');
   const [query,          setQuery]          = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [items,          setItems]          = useState([]);
   const [loading,        setLoading]        = useState(true);
+  const [searching,      setSearching]      = useState(false); // subtle spinner during debounce
   const [error,          setError]          = useState('');
+  const debounceRef = useRef(null);
+
+  // Debounce: wait 400ms after user stops typing before hitting the API
+  useEffect(() => {
+    setSearching(true);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(query);
+      setSearching(false);
+    }, 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [query]);
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -88,6 +102,7 @@ export default function HomeFeed() {
       if (activeMode === 'Sell') params.type = 'sell';
       if (activeMode === 'Rent') params.type = 'rent';
       if (activeCategory)        params.category = activeCategory;
+      if (debouncedQuery.trim()) params.q = debouncedQuery.trim();
       const data = await listingsApi.getAll(params);
       setItems((data.listings || []).map(mapListing));
     } catch (err) {
@@ -95,16 +110,17 @@ export default function HomeFeed() {
     } finally {
       setLoading(false);
     }
-  }, [activeMode, activeCategory]);
+  }, [activeMode, activeCategory, debouncedQuery]);
 
-  useEffect(() => { fetchListings(); }, [fetchListings]);
+  useEffect(() => {
+    fetchListings();
+    // Auto-refresh every 60s so sold/rented listings disappear without manual refresh
+    const timer = setInterval(fetchListings, 60_000);
+    return () => clearInterval(timer);
+  }, [fetchListings]);
 
-  const filtered = query.trim()
-    ? items.filter((i) => i.title.toLowerCase().includes(query.toLowerCase()))
-    : items;
-
-  const showDemo = !loading && !error && filtered.length === 0;
-  const displayItems = showDemo ? DEMO_ITEMS : filtered;
+  const showDemo = !loading && !error && items.length === 0 && !debouncedQuery.trim();
+  const displayItems = showDemo ? DEMO_ITEMS : items;
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in w-full pb-24">
@@ -165,12 +181,14 @@ export default function HomeFeed() {
             className="input-base pl-11 h-12 rounded-2xl"
           />
           {query && (
-            <button
-              onClick={() => setQuery('')}
-              className="absolute top-1/2 right-3 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
-            >
-              <X size={16} />
-            </button>
+            searching
+              ? <Loader size={15} className="absolute top-1/2 right-3 -translate-y-1/2 animate-spin text-accent" />
+              : <button
+                  onClick={() => setQuery('')}
+                  className="absolute top-1/2 right-3 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  <X size={16} />
+                </button>
           )}
         </div>
         <div className="flex rounded-2xl border border-border-color bg-surface-elevated p-1 shrink-0">
@@ -254,6 +272,25 @@ export default function HomeFeed() {
                 </p>
               </div>
             )}
+
+            {/* No search results */}
+            {!showDemo && items.length === 0 && (
+              <div className="bento-panel flex flex-col items-center justify-center gap-3 py-16 text-center">
+                <PackageSearch size={40} className="text-text-secondary/30" />
+                <p className="font-bold text-text-primary">No listings found</p>
+                <p className="text-sm text-text-secondary">
+                  {debouncedQuery.trim()
+                    ? <>No results for "<strong>{debouncedQuery}</strong>" — try different keywords.</>
+                    : 'Try a different filter or check back later.'}
+                </p>
+                {debouncedQuery.trim() && (
+                  <button onClick={() => setQuery('')} className="text-sm font-bold text-accent hover:underline">
+                    Clear search
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {displayItems.map((item) => (
                 <ItemCard key={item.id} {...item} />
