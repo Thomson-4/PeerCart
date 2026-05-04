@@ -235,7 +235,7 @@ export default function HomeFeed() {
           <h2 className="text-xl font-black tracking-tight">
             {showDemo ? 'Sample Listings' : 'Shop Feed'}
             {!loading && !showDemo && (
-              <span className="ml-2 text-sm font-normal text-text-secondary">({filtered.length})</span>
+              <span className="ml-2 text-sm font-normal text-text-secondary">({items.length})</span>
             )}
           </h2>
           <button

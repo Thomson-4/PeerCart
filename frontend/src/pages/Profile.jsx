@@ -51,7 +51,7 @@ function EmailVerifyForm({ onVerified }) {
   const [step,    setStep]    = useState('email'); // 'email' | 'otp'
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
-  const { refreshUser } = useAuth();
+  const { refreshUser, login } = useAuth();
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -72,8 +72,12 @@ function EmailVerifyForm({ onVerified }) {
     setError('');
     setLoading(true);
     try {
-      await authApi.verifyEmailOtp(email, otp);
-      await refreshUser();
+      const data = await authApi.verifyEmailOtp(email, otp);
+      if (data.token && data.user) {
+        login(data.token, data.user);
+      } else {
+        await refreshUser();
+      }
       onVerified?.();
     } catch (err) {
       setError(err.message);
