@@ -147,21 +147,22 @@ export const Scene5Buying: React.FC = () => {
               marginBottom: 28,
             }}
           >
-            <span style={{ color: "#60a5fa", fontSize: 16, fontWeight: 700 }}>🛒 Safe & Secure Buying</span>
+            <span style={{ color: "#60a5fa", fontSize: 16, fontWeight: 700 }}>🛒 Razorpay Escrow · Zero Risk</span>
           </div>
         </FadeIn>
 
         <FadeIn delay={30} translateY={20}>
           <h2 style={{ fontSize: 54, fontWeight: 900, color: C.text, lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 20px" }}>
-            Browse.{" "}
-            <span style={{ background: "linear-gradient(135deg, #60a5fa, #818cf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Buy.</span>
-            {" "}Meet.
+            Pay safely.{" "}
+            <span style={{ background: "linear-gradient(135deg, #60a5fa, #818cf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              Never get scammed.
+            </span>
           </h2>
         </FadeIn>
 
         <FadeIn delay={55} translateY={20}>
           <p style={{ fontSize: 19, color: C.textSec, lineHeight: 1.6, margin: "0 0 24px" }}>
-            Browse verified campus listings. Pay securely via escrow — your money is held safe until you confirm receipt. No cash, no risk.
+            Browse verified campus listings. Pay via Razorpay — your money is held in <strong style={{ color: C.text }}>escrow</strong> until you confirm receipt. No cash. No strangers. No risk.
           </p>
         </FadeIn>
 

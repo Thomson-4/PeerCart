@@ -145,7 +145,7 @@ export const Scene6Meetup: React.FC = () => {
             padding: "10px 28px",
           }}
         >
-          <span style={{ color: C.green, fontSize: 18, fontWeight: 700 }}>🏫 Same campus · Zero hassle</span>
+          <span style={{ color: C.green, fontSize: 18, fontWeight: 700 }}>🏫 Both Verified · Same Campus · Zero Hassle</span>
         </div>
       </FadeIn>
 
@@ -158,12 +158,11 @@ export const Scene6Meetup: React.FC = () => {
 
       {/* Quote */}
       <FadeIn delay={100} translateY={14} style={{ marginTop: 36, position: "relative", zIndex: 2, textAlign: "center" }}>
-        <p style={{ fontSize: 26, color: C.text, fontWeight: 700, lineHeight: 1.4, letterSpacing: "-0.01em" }}>
-          "Same campus. Same trust.{" "}
+        <p style={{ fontSize: 28, color: C.text, fontWeight: 700, lineHeight: 1.4, letterSpacing: "-0.01em" }}>
+          Buyer and seller meet on campus.{" "}
           <span style={{ background: C.gradientText, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            Zero hassle.
+            Payment releases only after receipt confirmed.
           </span>
-          "
         </p>
       </FadeIn>
 

@@ -213,32 +213,35 @@ export default function AddItem() {
           ) : (
             /* Upload zone */
             <div className="space-y-3">
-              <div
-                onClick={() => fileRef.current?.click()}
-                className="aspect-square w-full rounded-2xl border-2 border-dashed border-border-color bg-surface-elevated/80 flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-accent hover:bg-accent/5 transition-colors group"
-              >
-                <div className="bg-surface rounded-full p-4 mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                  <UploadCloud size={32} className="text-text-secondary group-hover:text-accent" />
-                </div>
-                <h3 className="font-bold text-lg mb-1">
-                  {isMobile ? 'Take a Photo' : 'Upload a Photo'}
-                </h3>
-                <p className="text-sm text-text-secondary">
-                  {isMobile
-                    ? 'Tap to open your rear camera'
-                    : 'Click to select an image from your computer'}
-                </p>
-              </div>
-
-              {/* Desktop: scan with phone */}
-              {!isMobile && (
-                <button
-                  type="button"
-                  onClick={openQrModal}
-                  className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold border border-border-color rounded-xl hover:border-accent/60 hover:text-accent transition-colors text-text-secondary"
+              {isMobile ? (
+                /* Mobile: tap to open rear camera */
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  className="aspect-square w-full rounded-2xl border-2 border-dashed border-border-color bg-surface-elevated/80 flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-accent hover:bg-accent/5 transition-colors group"
                 >
-                  <QrCode size={16} /> Scan QR to upload from phone instead
-                </button>
+                  <div className="bg-surface rounded-full p-4 mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                    <Camera size={32} className="text-text-secondary group-hover:text-accent" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1">Take a Photo</h3>
+                  <p className="text-sm text-text-secondary">Tap to open your rear camera</p>
+                </div>
+              ) : (
+                /* Desktop: QR code is primary — phone camera gives live-capture badge */
+                <>
+                  <div
+                    onClick={openQrModal}
+                    className="aspect-square w-full rounded-2xl border-2 border-dashed border-accent/40 bg-accent/5 flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-accent hover:bg-accent/10 transition-colors group"
+                  >
+                    <div className="bg-accent/10 rounded-full p-4 mb-4 shadow-sm group-hover:scale-110 transition-transform border border-accent/20">
+                      <QrCode size={32} className="text-accent" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-1 text-text-primary">Scan with Your Phone</h3>
+                    <p className="text-sm text-text-secondary">
+                      Use your phone camera for a <strong className="text-emerald-400">Live Capture</strong> verified badge
+                    </p>
+                  </div>
+
+                </>
               )}
             </div>
           )}
@@ -276,8 +279,8 @@ export default function AddItem() {
                 </>
               ) : (
                 <>
-                  <strong className="text-text-primary">On mobile?</strong> Use the rear camera to
-                  get a live-capture verified badge. Desktop uses file upload.
+                  <strong className="text-text-primary">Scan the QR</strong> with your phone to take a live photo — gets you a{' '}
+                  <strong className="text-emerald-400">Live Capture</strong> verified badge that builds buyer trust.
                 </>
               )}
             </div>

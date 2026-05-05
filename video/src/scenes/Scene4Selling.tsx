@@ -211,22 +211,22 @@ export const Scene4Selling: React.FC = () => {
               marginBottom: 28,
             }}
           >
-            <span style={{ color: C.lime, fontSize: 16, fontWeight: 700 }}>📸 Live Photo · Campus-only</span>
+            <span style={{ color: C.lime, fontSize: 16, fontWeight: 700 }}>📸 Live Photo · No Fakes · Campus-only</span>
           </div>
         </FadeIn>
 
         <FadeIn delay={35} translateY={20}>
           <h2 style={{ fontSize: 52, fontWeight: 900, color: C.text, lineHeight: 1.15, letterSpacing: "-0.03em", margin: "0 0 20px" }}>
-            Snap.{" "}
-            <span style={{ color: C.accent }}>List.</span>
-            {" "}Sell.{" "}
-            <span style={{ color: C.lime }}>Rent.</span>
+            List anything{" "}
+            <span style={{ background: C.gradientText, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              in 30 seconds.
+            </span>
           </h2>
         </FadeIn>
 
         <FadeIn delay={60} translateY={20}>
           <p style={{ fontSize: 19, color: C.textSec, lineHeight: 1.6, margin: "0 0 24px" }}>
-            Take a live photo with your camera — no stock images, no fakes. Your listing goes live on the campus feed instantly.
+            Snap a live photo — we ban stock images, so every listing is real. Your item goes live on the campus feed instantly, uploaded to Cloudinary in seconds.
           </p>
         </FadeIn>
 

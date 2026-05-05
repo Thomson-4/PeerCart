@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { C } from "../components/colors";
 import { FadeIn } from "../components/AnimatedText";
-import { Logo, LogoMark } from "../components/Logo";
+import { LogoMark } from "../components/Logo";
 import { Orb } from "../components/Orb";
 
 export const Scene8CTA: React.FC = () => {
@@ -10,19 +10,23 @@ export const Scene8CTA: React.FC = () => {
   const { fps, durationInFrames } = useVideoConfig();
 
   const fadeIn = interpolate(frame, [0, 25], [0, 1], { extrapolateRight: "clamp" });
-  // Final fade to black
   const fadeOut = interpolate(frame, [durationInFrames - 40, durationInFrames], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Pulsing outer glow
-  const glowSize = 300 + Math.sin((frame / 40) * Math.PI) * 40;
+  const glowSize = 320 + Math.sin((frame / 42) * Math.PI) * 45;
+
+  // Logo spring
+  const logoScale = spring({ frame, fps, config: { damping: 11, stiffness: 90 }, durationInFrames: 50 });
+
+  // Orbiting particles
+  const particleCount = 14;
 
   return (
     <AbsoluteFill
       style={{
-        background: `radial-gradient(ellipse at center, #110d1a 0%, #0a0a0a 65%)`,
+        background: `radial-gradient(ellipse at center, #12081e 0%, #0a0a0a 65%)`,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -39,7 +43,7 @@ export const Scene8CTA: React.FC = () => {
           width: glowSize * 2,
           height: glowSize * 2,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 65%)",
+          background: "radial-gradient(circle, rgba(124,58,237,0.13) 0%, rgba(34,197,94,0.06) 40%, transparent 70%)",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
@@ -47,58 +51,57 @@ export const Scene8CTA: React.FC = () => {
         }}
       />
 
-      {/* Particle-like dots */}
-      {Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i / 12) * Math.PI * 2 + frame * 0.008;
-        const radius = 380 + Math.sin(frame * 0.02 + i) * 20;
+      {/* Orbiting dots */}
+      {Array.from({ length: particleCount }).map((_, i) => {
+        const angle = (i / particleCount) * Math.PI * 2 + frame * 0.009;
+        const radius = 400 + Math.sin(frame * 0.018 + i * 0.8) * 22;
         const x = Math.cos(angle) * radius;
         const y = Math.sin(angle) * radius;
-        const dotOpacity = 0.2 + Math.sin(frame * 0.05 + i * 0.5) * 0.15;
+        const dotOpacity = 0.15 + Math.sin(frame * 0.045 + i * 0.6) * 0.12;
+        const isGreen = i % 3 === 0;
         return (
           <div
             key={i}
             style={{
               position: "absolute",
-              width: 4,
-              height: 4,
+              width: i % 4 === 0 ? 6 : 3,
+              height: i % 4 === 0 ? 6 : 3,
               borderRadius: "50%",
-              background: C.accent,
+              background: isGreen ? C.green : C.accent,
               top: "50%",
               left: "50%",
               transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
               opacity: dotOpacity,
+              boxShadow: isGreen ? `0 0 8px ${C.green}` : `0 0 6px ${C.accent}`,
             }}
           />
         );
       })}
 
-      <Orb x={-150} y={600} size={500} color="rgba(163,230,53,0.3)" opacity={0.12} />
-      <Orb x={1600} y={-100} size={500} color="rgba(124,58,237,0.4)" opacity={0.15} />
+      <Orb x={-150} y={600} size={500} color="rgba(163,230,53,0.3)" opacity={0.1} />
+      <Orb x={1600} y={-100} size={500} color="rgba(124,58,237,0.4)" opacity={0.14} />
 
       {/* Content */}
       <div style={{ textAlign: "center", position: "relative", zIndex: 2 }}>
 
-        {/* Logo — full PNG (icon + PeerCart wordmark) */}
-        <div style={{ marginBottom: 28, display: "flex", justifyContent: "center" }}>
-          <LogoMark size={180} glow />
+        {/* Logo */}
+        <div style={{ marginBottom: 24, display: "flex", justifyContent: "center", transform: `scale(${logoScale})` }}>
+          <LogoMark size={200} glow />
         </div>
 
         {/* Main tagline */}
-        <FadeIn delay={30} translateY={30}>
+        <FadeIn delay={30} translateY={28}>
           <h2
             style={{
-              fontSize: 58,
+              fontSize: 62,
               fontWeight: 900,
-              lineHeight: 1.15,
+              lineHeight: 1.12,
               letterSpacing: "-0.03em",
-              margin: "0 0 14px",
+              margin: "0 0 10px",
               color: C.text,
-              maxWidth: 1400,
             }}
           >
-            Because the best marketplace{" "}
-            <br />
-            you'll ever have…{" "}
+            Your campus.{" "}
             <span
               style={{
                 background: C.gradientText,
@@ -106,60 +109,88 @@ export const Scene8CTA: React.FC = () => {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              is right outside your door.
+              Your marketplace.
             </span>
           </h2>
         </FadeIn>
 
-        {/* URL */}
-        <FadeIn delay={60} translateY={20}>
+        {/* Sub-tagline */}
+        <FadeIn delay={52} translateY={18}>
+          <p style={{ fontSize: 22, color: C.textSec, fontWeight: 500, margin: "0 0 28px", letterSpacing: "0.01em" }}>
+            Buy · Sell · Rent — safely, inside REVA University
+          </p>
+        </FadeIn>
+
+        {/* Live URL pill */}
+        <FadeIn delay={72} translateY={18}>
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 12,
-              background: "rgba(124,58,237,0.1)",
-              border: "1px solid rgba(124,58,237,0.3)",
+              background: "rgba(124,58,237,0.12)",
+              border: "1px solid rgba(124,58,237,0.35)",
               borderRadius: 999,
-              padding: "10px 28px",
-              marginBottom: 20,
-              boxShadow: "0 0 30px rgba(124,58,237,0.15)",
+              padding: "12px 32px",
+              marginBottom: 22,
+              boxShadow: "0 0 32px rgba(124,58,237,0.18)",
             }}
           >
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.green, boxShadow: `0 0 10px ${C.green}` }} />
-            <span style={{ color: "#a78bfa", fontSize: 20, fontWeight: 700, letterSpacing: "0.02em" }}>
-              peer-cart-umber.vercel.app
+            <div
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: "50%",
+                background: C.green,
+                boxShadow: `0 0 12px ${C.green}`,
+                opacity: frame % 20 < 10 ? 1 : 0.6,
+              }}
+            />
+            <span style={{ color: "#a78bfa", fontSize: 22, fontWeight: 700, letterSpacing: "0.015em" }}>
+              peer-cart-theta.vercel.app
             </span>
           </div>
         </FadeIn>
 
-        {/* Sub-line */}
-        <FadeIn delay={90} translateY={16}>
-          <p style={{ color: C.textSec, fontSize: 16, margin: "0 0 24px", letterSpacing: "0.01em" }}>
-            REVA University Campus Marketplace · Free to join · No strangers
+        {/* Attribution */}
+        <FadeIn delay={95} translateY={14}>
+          <p style={{ color: `${C.textSec}88`, fontSize: 15, margin: "0 0 26px", letterSpacing: "0.04em" }}>
+            Built by students · For REVA University · 2024
           </p>
         </FadeIn>
 
-        {/* CTA pills */}
-        <FadeIn delay={115} translateY={16}>
-          <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
-            {["Buy on campus", "Sell in 30 seconds", "Rent anything", "Zero risk escrow"].map((text, i) => (
-              <div
-                key={text}
-                style={{
-                  padding: "8px 20px",
-                  borderRadius: 999,
-                  background: i === 0 ? C.gradientBg : "rgba(255,255,255,0.04)",
-                  border: i === 0 ? "none" : "1px solid rgba(255,255,255,0.1)",
-                  color: C.white,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  boxShadow: i === 0 ? "0 0 20px rgba(124,58,237,0.35)" : "none",
-                }}
-              >
-                {text}
-              </div>
-            ))}
+        {/* CTA action pills */}
+        <FadeIn delay={118} translateY={14}>
+          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+            {[
+              { text: "🛒 Buy on campus", primary: true },
+              { text: "📸 Sell in 30 seconds", primary: false },
+              { text: "🔒 Zero-risk escrow", primary: false },
+              { text: "🛡️ Verified users only", primary: false },
+            ].map(({ text, primary }, i) => {
+              const pillDelay = 118 + i * 10;
+              const pillOpacity = interpolate(frame, [pillDelay, pillDelay + 18], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+              const pillTy = interpolate(frame, [pillDelay, pillDelay + 18], [10, 0], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+              return (
+                <div
+                  key={text}
+                  style={{
+                    padding: "9px 22px",
+                    borderRadius: 999,
+                    background: primary ? C.gradientBg : "rgba(255,255,255,0.045)",
+                    border: primary ? "none" : "1px solid rgba(255,255,255,0.1)",
+                    color: C.white,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    boxShadow: primary ? "0 0 24px rgba(124,58,237,0.4)" : "none",
+                    opacity: pillOpacity,
+                    transform: `translateY(${pillTy}px)`,
+                  }}
+                >
+                  {text}
+                </div>
+              );
+            })}
           </div>
         </FadeIn>
       </div>

@@ -136,22 +136,22 @@ export const Scene3Signup: React.FC = () => {
             }}
           >
             <span style={{ fontSize: 18 }}>🎓</span>
-            <span style={{ color: "#a78bfa", fontSize: 16, fontWeight: 700 }}>College-Verified Signup</span>
+            <span style={{ color: "#a78bfa", fontSize: 16, fontWeight: 700 }}>Zero Strangers. Only REVA Students.</span>
           </div>
         </FadeIn>
 
         <FadeIn delay={30} translateY={20}>
           <h2 style={{ fontSize: 56, fontWeight: 900, color: C.text, lineHeight: 1.1, letterSpacing: "-0.03em", margin: "0 0 20px" }}>
-            Sign up in{" "}
+            One OTP.{" "}
             <span style={{ background: C.gradientText, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              10 seconds
+              Instant Trust.
             </span>
           </h2>
         </FadeIn>
 
         <FadeIn delay={55} translateY={20}>
           <p style={{ fontSize: 20, color: C.textSec, lineHeight: 1.6, margin: "0 0 28px" }}>
-            Your college email is your identity. One OTP — and you're verified, trusted, and trading.
+            Your college email is your identity. Verify once with an OTP — and you're instantly trusted, at <strong style={{ color: C.text }}>Trust Level 1</strong>, ready to buy and sell.
           </p>
         </FadeIn>
 
